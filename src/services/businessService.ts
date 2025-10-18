@@ -3,9 +3,16 @@
 import { API_CONFIG } from '../constants';
 import { Business, BusinessForm, SearchParams, PaginatedResponse, ApiResponse } from '../types';
 import { apiClient } from './apiClient';
+import { mockBusinessService } from './mockBusinessService';
 
 class BusinessService {
+  private useMockService = true; // Set to false when backend is ready
+
   async getBusinesses(params: { page?: number; limit?: number } = {}): Promise<PaginatedResponse<Business>> {
+    if (this.useMockService) {
+      return mockBusinessService.getBusinesses(params);
+    }
+
     const response = await apiClient.get<ApiResponse<PaginatedResponse<Business>>>(
       API_CONFIG.ENDPOINTS.BUSINESS.LIST,
       { params }
@@ -19,6 +26,10 @@ class BusinessService {
   }
 
   async getBusinessById(id: string): Promise<Business> {
+    if (this.useMockService) {
+      return mockBusinessService.getBusinessById(id);
+    }
+
     const response = await apiClient.get<ApiResponse<Business>>(
       API_CONFIG.ENDPOINTS.BUSINESS.DETAIL.replace(':id', id)
     );
@@ -31,6 +42,10 @@ class BusinessService {
   }
 
   async searchBusinesses(searchParams: SearchParams): Promise<PaginatedResponse<Business>> {
+    if (this.useMockService) {
+      return mockBusinessService.searchBusinesses(searchParams);
+    }
+
     const response = await apiClient.post<ApiResponse<PaginatedResponse<Business>>>(
       API_CONFIG.ENDPOINTS.BUSINESS.SEARCH,
       searchParams
