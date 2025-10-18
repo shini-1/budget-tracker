@@ -3,6 +3,7 @@
 import { API_CONFIG } from '../constants';
 import { LoginForm, RegisterForm, User, ApiResponse } from '../types';
 import { apiClient } from './apiClient';
+import { mockAuthService } from './mockAuthService';
 
 export interface AuthResponse {
   user: User;
@@ -11,7 +12,13 @@ export interface AuthResponse {
 }
 
 class AuthService {
+  private useMockService = true; // Set to false when backend is ready
+
   async login(credentials: LoginForm): Promise<AuthResponse> {
+    if (this.useMockService) {
+      return mockAuthService.login(credentials);
+    }
+
     const response = await apiClient.post<ApiResponse<AuthResponse>>(
       API_CONFIG.ENDPOINTS.AUTH.LOGIN,
       credentials
@@ -25,6 +32,10 @@ class AuthService {
   }
 
   async register(userData: RegisterForm): Promise<AuthResponse> {
+    if (this.useMockService) {
+      return mockAuthService.register(userData);
+    }
+
     const response = await apiClient.post<ApiResponse<AuthResponse>>(
       API_CONFIG.ENDPOINTS.AUTH.REGISTER,
       userData
@@ -38,6 +49,10 @@ class AuthService {
   }
 
   async refreshToken(refreshToken: string): Promise<{ token: string; refreshToken: string }> {
+    if (this.useMockService) {
+      return mockAuthService.refreshToken(refreshToken);
+    }
+
     const response = await apiClient.post<ApiResponse<{ token: string; refreshToken: string }>>(
       API_CONFIG.ENDPOINTS.AUTH.REFRESH,
       { refreshToken }
@@ -51,6 +66,10 @@ class AuthService {
   }
 
   async logout(token: string): Promise<void> {
+    if (this.useMockService) {
+      return mockAuthService.logout(token);
+    }
+
     try {
       await apiClient.post(
         API_CONFIG.ENDPOINTS.AUTH.LOGOUT,
@@ -68,6 +87,10 @@ class AuthService {
   }
 
   async forgotPassword(email: string): Promise<void> {
+    if (this.useMockService) {
+      return mockAuthService.forgotPassword(email);
+    }
+
     const response = await apiClient.post<ApiResponse<void>>(
       API_CONFIG.ENDPOINTS.AUTH.FORGOT_PASSWORD,
       { email }
@@ -79,6 +102,10 @@ class AuthService {
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
+    if (this.useMockService) {
+      return mockAuthService.resetPassword(token, newPassword);
+    }
+
     const response = await apiClient.post<ApiResponse<void>>(
       API_CONFIG.ENDPOINTS.AUTH.RESET_PASSWORD,
       { token, newPassword }
