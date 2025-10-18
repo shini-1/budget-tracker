@@ -15,7 +15,8 @@ import { RestaurantMap } from '../../components/maps/RestaurantMap';
 import { MapSearchBar } from '../../components/maps/MapSearchBar';
 import { MapControls } from '../../components/maps/MapControls';
 import { RestaurantList } from '../../components/maps/RestaurantList';
-import { Business, Location } from '../../types';
+import { CategoryFilter } from '../../components/filters/CategoryFilter';
+import { Business, Location, BusinessCategory, PriceRange } from '../../types';
 import { COLORS, TYPOGRAPHY, SPACING, MAPS_CONFIG } from '../../constants';
 import { useLocation } from '../../hooks/useLocation';
 
@@ -30,6 +31,8 @@ export const HomeScreen: React.FC = () => {
   const [selectedRestaurant, setSelectedRestaurant] = useState<Business | null>(null);
   const [mapType, setMapType] = useState<'standard' | 'satellite' | 'hybrid'>('standard');
   const [showList, setShowList] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<BusinessCategory[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     // Load nearby restaurants when location is available
@@ -81,8 +84,21 @@ export const HomeScreen: React.FC = () => {
   };
 
   const handleShowFilters = () => {
-    Alert.alert('Filters', 'Filter options will be implemented in the next phase');
+    setShowFilters(!showFilters);
   };
+
+  const handleCategoryToggle = (category: BusinessCategory) => {
+    if (selectedCategories.includes(category)) {
+      setSelectedCategories(selectedCategories.filter((c) => c !== category));
+    } else {
+      setSelectedCategories([...selectedCategories, category]);
+    }
+  };
+
+  // Filter businesses based on selected categories
+  const filteredBusinesses = selectedCategories.length > 0
+    ? businesses.filter((b) => selectedCategories.includes(b.category))
+    : businesses;
 
   const handleToggleList = () => {
     setShowList(!showList);
@@ -111,32 +127,39 @@ export const HomeScreen: React.FC = () => {
         onCenterOnUser={handleCenterOnUser}
         onToggleMapType={handleToggleMapType}
         onShowFilters={handleShowFilters}
-        userLocation={location}
+        userLocation={location || undefined}
         mapType={mapType}
         style={styles.mapControls}
       />
 
+      {/* Category Filter */}
+      <CategoryFilter
+        selectedCategories={selectedCategories}
+        onCategoryToggle={handleCategoryToggle}
+        style={styles.categoryFilter}
+      />
+
       {/* Restaurant Map */}
       <RestaurantMap
-        restaurants={businesses}
+        restaurants={filteredBusinesses}
         onRestaurantSelect={handleRestaurantSelect}
-        initialLocation={location}
+        initialLocation={location || undefined}
         style={styles.map}
       />
 
       {/* Toggle List Button */}
       <View style={styles.toggleContainer}>
         <Text style={styles.toggleButton} onPress={handleToggleList}>
-          {showList ? 'Hide List' : `Show List (${businesses.length})`}
+          {showList ? 'Hide List' : `Show List (${filteredBusinesses.length})`}
         </Text>
       </View>
 
       {/* Restaurant List */}
       {showList && (
         <RestaurantList
-          restaurants={businesses}
+          restaurants={filteredBusinesses}
           onRestaurantSelect={handleRestaurantSelect}
-          userLocation={location}
+          userLocation={location || undefined}
           style={styles.restaurantList}
         />
       )}
@@ -162,10 +185,17 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 1000,
   },
+  categoryFilter: {
+    position: 'absolute',
+    top: 60,
+    left: 0,
+    right: 0,
+    zIndex: 999,
+  },
   mapControls: {
     position: 'absolute',
     right: SPACING.md,
-    top: 120,
+    top: 180,
     zIndex: 1000,
   },
   map: {

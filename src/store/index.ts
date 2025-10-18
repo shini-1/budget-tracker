@@ -7,6 +7,7 @@ import { userSlice } from './slices/userSlice';
 import { searchSlice } from './slices/searchSlice';
 import { reviewSlice } from './slices/reviewSlice';
 import { notificationSlice } from './slices/notificationSlice';
+import { favoritesSlice } from './slices/favoritesSlice';
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +17,7 @@ export const store = configureStore({
     search: searchSlice.reducer,
     review: reviewSlice.reducer,
     notification: notificationSlice.reducer,
+    favorites: favoritesSlice.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -36,3 +38,4 @@ export const userActions = userSlice.actions;
 export const searchActions = searchSlice.actions;
 export const reviewActions = reviewSlice.actions;
 export const notificationActions = notificationSlice.actions;
+export const favoritesActions = favoritesSlice.actions;

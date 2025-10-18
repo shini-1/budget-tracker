@@ -161,6 +161,7 @@ export const COLORS = {
     disabled: '#BDBDBD',
     hint: '#9E9E9E',
   },
+  border: '#E0E0E0',
   divider: '#E0E0E0',
   shadow: 'rgba(0, 0, 0, 0.1)',
 } as const;
