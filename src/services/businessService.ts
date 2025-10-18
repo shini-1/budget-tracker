@@ -4,13 +4,19 @@ import { API_CONFIG } from '../constants';
 import { Business, BusinessForm, SearchParams, PaginatedResponse, ApiResponse } from '../types';
 import { apiClient } from './apiClient';
 import { mockBusinessService } from './mockBusinessService';
+import { firebaseBusinessService } from './firebaseBusinessService';
 
 class BusinessService {
-  private useMockService = true; // Set to false when backend is ready
+  private useMockService = false; // Set to true for development without Firebase
+  private useFirebase = true; // Set to false to use REST API
 
   async getBusinesses(params: { page?: number; limit?: number } = {}): Promise<PaginatedResponse<Business>> {
     if (this.useMockService) {
       return mockBusinessService.getBusinesses(params);
+    }
+
+    if (this.useFirebase) {
+      return firebaseBusinessService.getBusinesses(params);
     }
 
     const response = await apiClient.get<ApiResponse<PaginatedResponse<Business>>>(

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "291044185235",
+    "project_id": "foodventurer-20548",
+    "storage_bucket": "foodventurer-20548.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:291044185235:android:3d23f918dda5049e70a966",
+        "android_client_info": {
+          "package_name": "com.codeblooded.foodventurer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAUH7AIvFDuBO-_hI8VFqZsB6Dt3B1rn0M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

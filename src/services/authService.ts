@@ -4,6 +4,7 @@ import { API_CONFIG } from '../constants';
 import { LoginForm, RegisterForm, User, ApiResponse } from '../types';
 import { apiClient } from './apiClient';
 import { mockAuthService } from './mockAuthService';
+import { firebaseAuthService } from './firebaseAuthService';
 
 export interface AuthResponse {
   user: User;
@@ -12,11 +13,27 @@ export interface AuthResponse {
 }
 
 class AuthService {
-  private useMockService = true; // Set to false when backend is ready
+  private useMockService = false; // Set to true for development without Firebase
+  private useFirebase = true; // Set to false to use REST API
 
   async login(credentials: LoginForm): Promise<AuthResponse> {
     if (this.useMockService) {
       return mockAuthService.login(credentials);
+    }
+
+    if (this.useFirebase) {
+      const user = await firebaseAuthService.signIn(credentials.email, credentials.password);
+      const token = await firebaseAuthService.getIdToken();
+      
+      if (!token) {
+        throw new Error('Failed to get authentication token');
+      }
+
+      return {
+        user,
+        token,
+        refreshToken: token, // Firebase handles refresh automatically
+      };
     }
 
     const response = await apiClient.post<ApiResponse<AuthResponse>>(
