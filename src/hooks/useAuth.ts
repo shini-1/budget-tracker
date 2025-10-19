@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
 import { 
   loginUser, 
+  loginUserBasic,
   registerUser, 
   logoutUser, 
   loadStoredAuth,
@@ -17,6 +18,10 @@ export const useAuth = () => {
 
   const login = async (credentials: LoginForm) => {
     return dispatch(loginUser(credentials));
+  };
+
+  const loginBasic = async (credentials: LoginForm) => {
+    return dispatch(loginUserBasic(credentials));
   };
 
   const register = async (userData: RegisterForm) => {
@@ -38,6 +43,7 @@ export const useAuth = () => {
   return {
     ...auth,
     login,
+    loginBasic,
     register,
     logout,
     loadAuth,

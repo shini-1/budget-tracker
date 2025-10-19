@@ -1,9 +1,11 @@
 // App Constants and Configuration
 
+import { GOOGLE_MAPS_API_KEY } from '@env';
+
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: process.env.API_BASE_URL || 'https://api.foodventurer.com',
-  TIMEOUT: parseInt(process.env.API_TIMEOUT || '10000'),
+  BASE_URL: 'https://api.foodventurer.com',
+  TIMEOUT: 10000,
   ENDPOINTS: {
     AUTH: {
       LOGIN: '/auth/login',
@@ -47,7 +49,7 @@ export const API_CONFIG = {
 
 // Google Maps Configuration
 export const MAPS_CONFIG = {
-  API_KEY: process.env.GOOGLE_MAPS_API_KEY || '',
+  API_KEY: GOOGLE_MAPS_API_KEY || '',
   DEFAULT_ZOOM: 15,
   DEFAULT_CENTER: {
     latitude: 37.7749,
@@ -61,7 +63,7 @@ export const MAPS_CONFIG = {
 export const APP_CONFIG = {
   NAME: 'Foodventurer',
   VERSION: '1.0.0',
-  DEBUG: process.env.DEBUG_MODE === 'true',
+  DEBUG: false,
   SUPPORTED_LANGUAGES: ['en', 'es', 'fr'],
   DEFAULT_LANGUAGE: 'en',
 };
@@ -239,7 +241,35 @@ export const VALIDATION = {
   description: {
     maxLength: 500,
   },
-} as const;
+  validatePassword: (password: string): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+    
+    if (password.length < 8) {
+      errors.push('Password must be at least 8 characters long');
+    }
+    
+    if (!/[A-Z]/.test(password)) {
+      errors.push('Password must contain at least one uppercase letter');
+    }
+    
+    if (!/[a-z]/.test(password)) {
+      errors.push('Password must contain at least one lowercase letter');
+    }
+    
+    if (!/[0-9]/.test(password)) {
+      errors.push('Password must contain at least one number');
+    }
+    
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      errors.push('Password must contain at least one special character');
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors,
+    };
+  },
+};
 
 // Error Messages
 export const ERROR_MESSAGES = {

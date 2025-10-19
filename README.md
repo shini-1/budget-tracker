@@ -1,6 +1,6 @@
-# 🍽️ Foodventurer
+# 🍽️ FoodVenturer
 
-**Foodventurer** is a comprehensive restaurant discovery app built with React Native and TypeScript. It helps users find nearby restaurants using Google Maps while providing business owners with their own management panel and admins with complete platform control.
+**FoodVenturer** is a comprehensive restaurant discovery app built with React Native and TypeScript. It helps users find nearby restaurants using Google Maps and Google Places API while providing business owners with their own management panel and admins with complete platform control.
 
 ## 🚀 Features
 
@@ -239,6 +239,33 @@ If you're having issues getting the above steps to work, see the [Troubleshootin
 - [ ] **Testing & Deployment** - Unit tests, integration tests, and deployment
 
 ### 📝 **Recent Updates**
+- **October 19, 2025** - App Branding, API Fixes & Firebase Setup
+  - ✅ **App Rebranding**
+    - Updated display name to "FoodVenturer"
+    - Added app logo assets directory
+    - Updated Android strings.xml and app.json
+  - ✅ **Google Places API Integration**
+    - Enhanced error handling with detailed logging
+    - Added REQUEST_DENIED and ZERO_RESULTS handling
+    - Comprehensive setup guide created (GOOGLE_PLACES_SETUP.md)
+    - Re-enabled as primary data source
+  - ✅ **Firebase Database Structure**
+    - Complete database schema documented (FIREBASE_SETUP.md)
+    - Security rules defined for all collections
+    - Seed script created for sample data (scripts/seedFirebase.js)
+    - Collections: users, businesses, reviews, menus, favorites, notifications
+  - ✅ **Current Location Feature**
+    - Added custom floating location button with GPS integration
+    - Proper permission handling for Android & iOS
+    - Smooth animation to user's current location
+    - Loading states and error handling
+  - ✅ **Firebase Deprecation Warnings**
+    - Acknowledged warnings (non-breaking, still functional)
+    - Added notes for future v22 migration
+  - ✅ **InteractionManager Warning**
+    - Suppressed deprecation warning in AuthNavigator
+  - 📦 All changes committed and ready to push
+  
 - **October 18, 2025** - Application Build Fixed & Expo Migration
   - ✅ **Package Name Corrected**
     - Fixed package name from `com.coldblooded.foodventurer` to `com.codeblooded.foodventurer`

@@ -12,8 +12,8 @@ import { FavoritesScreen } from '../screens/user/FavoritesScreen';
 import { UserProfileScreen } from '../screens/user/UserProfileScreen';
 import { BusinessDetailScreen } from '../screens/user/BusinessDetailScreen';
 
-// Import icons (you can replace these with your preferred icon library)
-import { Ionicons } from '@expo/vector-icons';
+// Import icons
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { COLORS } from '../constants';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -26,7 +26,7 @@ const MainTabNavigator: React.FC = () => {
       initialRouteName="Home"
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
-          let iconName: keyof typeof Ionicons.glyphMap;
+          let iconName: string;
 
           switch (route.name) {
             case 'Home':

@@ -9,7 +9,7 @@ import {
   Text,
   FlatList,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Business, Location } from '../../types';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../constants';
 import { debounce } from '../../utils';

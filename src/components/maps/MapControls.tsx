@@ -7,7 +7,7 @@ import {
   StyleSheet,
   Text,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Location } from '../../types';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../constants';
 
@@ -28,7 +28,7 @@ export const MapControls: React.FC<MapControlsProps> = ({
   mapType,
   style,
 }) => {
-  const getMapTypeIcon = (): keyof typeof Ionicons.glyphMap => {
+  const getMapTypeIcon = (): string => {
     switch (mapType) {
       case 'satellite':
         return 'globe';

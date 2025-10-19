@@ -204,61 +204,15 @@ const styles = StyleSheet.create({
   },
   footer: {
     alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  connectivityButtonText: {
-    color: COLORS.surface,
-    fontSize: TYPOGRAPHY.fontSize.sm,
-    fontWeight: '600',
-  },
-  authServiceButton: {
-    backgroundColor: COLORS.accent,
-    paddingVertical: SPACING.lg,
-    paddingHorizontal: SPACING.xl,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  authServiceButtonText: {
-    color: COLORS.surface,
-    fontSize: TYPOGRAPHY.fontSize.sm,
-    fontWeight: '600',
-  },
-  basicLoginButton: {
-    backgroundColor: COLORS.secondary,
-    paddingVertical: SPACING.lg,
-    paddingHorizontal: SPACING.xl,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  basicLoginButtonText: {
-    color: COLORS.surface,
-    fontSize: TYPOGRAPHY.fontSize.sm,
-    fontWeight: '500',
-  },
-  testAccountButton: {
-    backgroundColor: COLORS.warning,
-    paddingVertical: SPACING.lg,
-    paddingHorizontal: SPACING.xl,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  testAccountButtonText: {
-    color: COLORS.surface,
-    fontSize: TYPOGRAPHY.fontSize.sm,
-    fontWeight: '500',
   },
   forgotPasswordButton: {
-    alignItems: 'center',
+    marginBottom: SPACING.md,
   },
   forgotPasswordText: {
     color: COLORS.primary,
     fontSize: TYPOGRAPHY.fontSize.md,
   },
   backButton: {
-    alignItems: 'center',
     marginTop: SPACING.md,
   },
   backButtonText: {

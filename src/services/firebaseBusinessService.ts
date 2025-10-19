@@ -1,4 +1,6 @@
 // Firebase Business Service
+// Note: This uses React Native Firebase v6 API which shows deprecation warnings
+// but is still fully functional. Migration to v22 modular API can be done later.
 
 import firestore from '@react-native-firebase/firestore';
 import { Business, BusinessForm, SearchParams, PaginatedResponse, Location } from '../types';
@@ -271,6 +273,11 @@ class FirebaseBusinessService {
     } catch (error: any) {
       throw new Error('Failed to fetch owner businesses');
     }
+  }
+
+  // Alias for getUserBusinesses
+  async getUserBusinesses(userId: string): Promise<Business[]> {
+    return this.getBusinessesByOwner(userId);
   }
 
   // Helper function to calculate distance between two points

@@ -11,9 +11,10 @@ import { MenuManagementScreen } from '../screens/business/MenuManagementScreen';
 import { ReviewsManagementScreen } from '../screens/business/ReviewsManagementScreen';
 import { BusinessAnalyticsScreen } from '../screens/business/BusinessAnalyticsScreen';
 import { BusinessSettingsScreen } from '../screens/business/BusinessSettingsScreen';
+import { AddRestaurantScreen } from '../screens/business/AddRestaurantScreen';
 
 // Import icons
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { COLORS } from '../constants';
 
 const Tab = createBottomTabNavigator<BusinessTabParamList>();
@@ -26,7 +27,7 @@ const BusinessTabNavigator: React.FC = () => {
       initialRouteName="Dashboard"
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
-          let iconName: keyof typeof Ionicons.glyphMap;
+          let iconName: string;
 
           switch (route.name) {
             case 'Dashboard':
@@ -124,6 +125,21 @@ export const BusinessNavigator: React.FC = () => {
         options={{
           headerShown: true,
           title: 'Business Settings',
+          headerStyle: {
+            backgroundColor: COLORS.secondary,
+          },
+          headerTintColor: COLORS.surface,
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+        }}
+      />
+      <Stack.Screen 
+        name="AddRestaurant" 
+        component={AddRestaurantScreen}
+        options={{
+          headerShown: true,
+          title: 'Add Restaurant',
           headerStyle: {
             backgroundColor: COLORS.secondary,
           },

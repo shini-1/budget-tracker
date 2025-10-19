@@ -71,7 +71,7 @@ export const RegisterScreen: React.FC = () => {
       return false;
     }
 
-    if (!formData.phoneNumber || !formData.phoneNumber.trim()) {
+    if (!formData.phoneNumber.trim()) {
       Alert.alert('Error', 'Please enter your phone number');
       return false;
     }
@@ -84,16 +84,15 @@ export const RegisterScreen: React.FC = () => {
 
     try {
       await register(formData);
-      // Navigation will happen automatically when auth state changes
-      // The AppNavigator will detect the authenticated user and switch to the appropriate navigator
       Alert.alert(
         'Success!',
-        'Your account has been created successfully!',
+        'Your account has been created successfully! Please check your email for verification.',
         [
           {
             text: 'Continue',
             onPress: () => {
-              // No manual navigation needed - auth state change will trigger automatic navigation
+              // @ts-ignore
+              navigation.navigate('Main');
             }
           }
         ]
@@ -311,6 +310,7 @@ const styles = StyleSheet.create({
   },
   registerButtonDisabled: {
     backgroundColor: COLORS.text.disabled,
+    opacity: 0.6,
   },
   registerButtonText: {
     color: COLORS.surface,
@@ -318,26 +318,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
   },
-  footerText: {
-    fontSize: TYPOGRAPHY.fontSize.md,
-    color: COLORS.text.secondary,
-  },
-  signInText: {
-    fontSize: TYPOGRAPHY.fontSize.md,
-    color: COLORS.primary,
-    fontWeight: '600',
-  },
   backButton: {
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.lg,
+    marginTop: SPACING.md,
   },
   backButtonText: {
     fontSize: TYPOGRAPHY.fontSize.md,
     color: COLORS.primary,
-    fontWeight: '500',
+    fontWeight: '600',
   },
 });

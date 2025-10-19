@@ -7,9 +7,12 @@ import {
   StyleSheet,
   Alert,
   Dimensions,
+  TouchableOpacity,
+  Platform,
+  PermissionsAndroid,
 } from 'react-native';
 import MapView, { Marker, Region, PROVIDER_GOOGLE } from 'react-native-maps';
-import { useLocation } from '../../hooks/useLocation';
+import Geolocation from 'react-native-geolocation-service';
 import { Business, Location } from '../../types';
 import { COLORS, MAPS_CONFIG } from '../../constants';
 import { LoadingSpinner } from '../common/LoadingSpinner';
@@ -32,34 +35,34 @@ export const RestaurantMap: React.FC<RestaurantMapProps> = ({
   style,
 }) => {
   const mapRef = useRef<MapView>(null);
-  const { location, isLoading: locationLoading, error: locationError } = useLocation();
+  // Remove useLocation hook - use provided initialLocation instead
   const [region, setRegion] = useState<Region>({
     latitude: initialLocation?.latitude || MAPS_CONFIG.DEFAULT_CENTER.latitude,
     longitude: initialLocation?.longitude || MAPS_CONFIG.DEFAULT_CENTER.longitude,
     latitudeDelta: 0.01,
     longitudeDelta: 0.01,
   });
+  const [mapReady, setMapReady] = useState(false);
+  const [userLocation, setUserLocation] = useState<Location | null>(null);
+  const [loadingLocation, setLoadingLocation] = useState(false);
 
+  // Update region when initialLocation changes
   useEffect(() => {
-    if (location && !initialLocation) {
-      setRegion({
-        latitude: location.latitude,
-        longitude: location.longitude,
+    if (initialLocation && mapReady) {
+      const newRegion = {
+        latitude: initialLocation.latitude,
+        longitude: initialLocation.longitude,
         latitudeDelta: 0.01,
         longitudeDelta: 0.01,
-      });
-    }
-  }, [location, initialLocation]);
+      };
+      setRegion(newRegion);
 
-  useEffect(() => {
-    if (locationError) {
-      Alert.alert(
-        'Location Error',
-        'Unable to get your current location. Please check your location permissions.',
-        [{ text: 'OK' }]
-      );
+      // Animate to location if map is ready
+      if (mapRef.current) {
+        mapRef.current.animateToRegion(newRegion, 1000);
+      }
     }
-  }, [locationError]);
+  }, [initialLocation, mapReady]);
 
   const handleMarkerPress = (restaurant: Business) => {
     if (onRestaurantSelect) {
@@ -113,22 +116,115 @@ export const RestaurantMap: React.FC<RestaurantMapProps> = ({
     }
   };
 
-  if (locationLoading) {
-    return (
-      <View style={[styles.container, style]}>
-        <LoadingSpinner text="Loading map..." />
-      </View>
-    );
-  }
+  const handleMapReady = () => {
+    setMapReady(true);
+    console.log('🗺️ Map is ready');
+  };
+
+  const requestLocationPermission = async (): Promise<boolean> => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: 'Location Permission',
+            message: 'Foodventurer needs access to your location to show nearby restaurants',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          }
+        );
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      } catch (err) {
+        console.warn('Location permission error:', err);
+        return false;
+      }
+    }
+    return true; // iOS handles permissions differently
+  };
+
+  const centerOnUserLocation = async () => {
+    setLoadingLocation(true);
+    
+    try {
+      const hasPermission = await requestLocationPermission();
+      
+      if (!hasPermission) {
+        Alert.alert(
+          'Permission Denied',
+          'Location permission is required to show your current location. Please enable it in settings.'
+        );
+        setLoadingLocation(false);
+        return;
+      }
+
+      Geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          const newUserLocation: Location = {
+            latitude,
+            longitude,
+          };
+          
+          setUserLocation(newUserLocation);
+          
+          const newRegion = {
+            latitude,
+            longitude,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          };
+          
+          setRegion(newRegion);
+          
+          if (mapRef.current) {
+            mapRef.current.animateToRegion(newRegion, 1000);
+          }
+          
+          setLoadingLocation(false);
+          console.log('📍 Centered on user location:', latitude, longitude);
+        },
+        (error) => {
+          console.error('Geolocation error:', error);
+          Alert.alert(
+            'Location Error',
+            'Unable to get your current location. Please make sure location services are enabled.'
+          );
+          setLoadingLocation(false);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 10000,
+        }
+      );
+    } catch (error) {
+      console.error('Error getting location:', error);
+      setLoadingLocation(false);
+    }
+  };
 
   return (
     <View style={[styles.container, style]}>
+      {showUserLocation && (
+        <TouchableOpacity
+          style={styles.locationButton}
+          onPress={centerOnUserLocation}
+          disabled={loadingLocation}
+        >
+          <Text style={styles.locationButtonText}>
+            {loadingLocation ? '⏳' : '📍'}
+          </Text>
+        </TouchableOpacity>
+      )}
+      
       <MapView
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
         style={styles.map}
         region={region}
         onRegionChangeComplete={handleRegionChangeComplete}
+        onMapReady={handleMapReady}
         showsUserLocation={showUserLocation}
         showsMyLocationButton={showUserLocation}
         showsCompass={true}
@@ -212,5 +308,25 @@ const styles = StyleSheet.create({
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
     marginTop: -2,
+  },
+  locationButton: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  locationButtonText: {
+    fontSize: 28,
   },
 });

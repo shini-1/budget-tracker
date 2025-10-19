@@ -1,14 +1,33 @@
 // Firebase Configuration
 
-import { initializeApp } from '@react-native-firebase/app';
-import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
+import { getAuth } from '@react-native-firebase/auth';
+import { getFirestore, serverTimestamp, writeBatch, runTransaction } from '@react-native-firebase/firestore';
 
-// Firebase configuration is automatically loaded from google-services.json
-// No need to manually configure as it's handled by the plugin
+// Initialize Firebase services using v22 modular API
+// React Native Firebase automatically initializes the app
+export const auth = getAuth();
+export const firestore = getFirestore();
 
-// Export Firebase services
-export { auth, firestore };
+// Debug logging
+console.log('🔍 Firebase Configuration Check:');
+console.log('Project ID from google-services.json:', 'foodventurer-20548');
+console.log('Package name from google-services.json:', 'com.codeblooded.foodventurer');
+console.log('API Key from google-services.json:', 'AIzaSyAUH7AIvFDuBO-_hI8VFqZsB6Dt3B1rn0M');
+
+console.log('Firebase initialized:', {
+  auth: !!auth,
+  firestore: !!firestore,
+  authApp: auth.app?.name,
+  firestoreApp: firestore.app?.name,
+  authProjectId: auth.app?.options?.projectId,
+  firestoreProjectId: firestore.app?.options?.projectId,
+});
+
+// Test Firebase connectivity
+console.log('🔍 Testing Firebase connectivity...');
+auth.onAuthStateChanged((user) => {
+  console.log('Auth state changed:', user ? 'User logged in' : 'No user');
+});
 
 // Initialize Firebase (this is done automatically by the plugin)
 // The app is initialized when the plugin loads
@@ -17,12 +36,12 @@ export { auth, firestore };
 export const firebaseConfig = {
   // Configuration is automatically loaded from google-services.json
   // This object is for reference only
-  projectId: 'foodventurer-app', // Replace with your actual project ID
-  appId: 'com.coldblooded.foodventurer',
-  apiKey: 'your-api-key', // This will be loaded from google-services.json
-  authDomain: 'foodventurer-app.firebaseapp.com',
-  storageBucket: 'foodventurer-app.appspot.com',
-  messagingSenderId: 'your-sender-id',
+  projectId: 'foodventurer-20548', // Updated to match google-services.json
+  appId: 'com.codeblooded.foodventurer', // Updated to match google-services.json
+  apiKey: 'AIzaSyAUH7AIvFDuBO-_hI8VFqZsB6Dt3B1rn0M', // From google-services.json
+  authDomain: 'foodventurer-20548.firebaseapp.com',
+  storageBucket: 'foodventurer-20548.firebasestorage.app',
+  messagingSenderId: '291044185235',
 };
 
 // Firebase collections
@@ -69,11 +88,11 @@ export const getFirebaseErrorMessage = (errorCode: string): string => {
 };
 
 // Firebase timestamp helper
-export const getFirebaseTimestamp = () => firestore.FieldValue.serverTimestamp();
+export const getFirebaseTimestamp = () => serverTimestamp();
 
 // Batch operations helper
-export const createBatch = () => firestore().batch();
+export const createBatch = () => writeBatch(firestore);
 
 // Transaction helper
-export const runTransaction = (updateFunction: (transaction: any) => Promise<any>) =>
-  firestore().runTransaction(updateFunction);
+export const runTransactionHelper = (updateFunction: (transaction: any) => Promise<any>) =>
+  runTransaction(firestore, updateFunction);

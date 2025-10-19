@@ -14,7 +14,7 @@ import { AdminAnalyticsScreen } from '../screens/admin/AdminAnalyticsScreen';
 import { AdminSettingsScreen } from '../screens/admin/AdminSettingsScreen';
 
 // Import icons
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { COLORS } from '../constants';
 
 const Tab = createBottomTabNavigator<AdminTabParamList>();
@@ -27,7 +27,7 @@ const AdminTabNavigator: React.FC = () => {
       initialRouteName="Dashboard"
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
-          let iconName: keyof typeof Ionicons.glyphMap;
+          let iconName: string;
 
           switch (route.name) {
             case 'Dashboard':

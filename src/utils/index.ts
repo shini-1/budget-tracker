@@ -1,5 +1,6 @@
 // Utility Functions for Foodventurer App
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Location, Business, Review } from '../types';
 import { VALIDATION, ERROR_MESSAGES } from '../constants';
 
@@ -228,10 +229,7 @@ export const uniqueBy = <T>(array: T[], key: keyof T): T[] => {
 export const setStorageItem = async (key: string, value: any): Promise<void> => {
   try {
     const jsonValue = JSON.stringify(value);
-    // Using AsyncStorage in React Native
-    // await AsyncStorage.setItem(key, jsonValue);
-    // For now, using localStorage for web compatibility
-    localStorage.setItem(key, jsonValue);
+    await AsyncStorage.setItem(key, jsonValue);
   } catch (error) {
     console.error('Error saving to storage:', error);
     throw new Error('Failed to save data');
@@ -240,8 +238,7 @@ export const setStorageItem = async (key: string, value: any): Promise<void> => 
 
 export const getStorageItem = async <T>(key: string): Promise<T | null> => {
   try {
-    // const jsonValue = await AsyncStorage.getItem(key);
-    const jsonValue = localStorage.getItem(key);
+    const jsonValue = await AsyncStorage.getItem(key);
     return jsonValue ? JSON.parse(jsonValue) : null;
   } catch (error) {
     console.error('Error reading from storage:', error);
@@ -251,8 +248,7 @@ export const getStorageItem = async <T>(key: string): Promise<T | null> => {
 
 export const removeStorageItem = async (key: string): Promise<void> => {
   try {
-    // await AsyncStorage.removeItem(key);
-    localStorage.removeItem(key);
+    await AsyncStorage.removeItem(key);
   } catch (error) {
     console.error('Error removing from storage:', error);
     throw new Error('Failed to remove data');

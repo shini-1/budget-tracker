@@ -48,6 +48,38 @@ class AuthService {
     return response.data.data;
   }
 
+  async loginBasic(credentials: LoginForm): Promise<AuthResponse> {
+    if (this.useMockService) {
+      return mockAuthService.login(credentials);
+    }
+
+    if (this.useFirebase) {
+      const user = await firebaseAuthService.signInBasic(credentials.email, credentials.password);
+      const token = await firebaseAuthService.getIdToken();
+
+      if (!token) {
+        throw new Error('Failed to get authentication token');
+      }
+
+      return {
+        user,
+        token,
+        refreshToken: token, // Firebase handles refresh automatically
+      };
+    }
+
+    const response = await apiClient.post<ApiResponse<AuthResponse>>(
+      API_CONFIG.ENDPOINTS.AUTH.LOGIN,
+      credentials
+    );
+
+    if (!response.data.success) {
+      throw new Error(response.data.error || 'Login failed');
+    }
+
+    return response.data.data;
+  }
+
   async register(userData: RegisterForm): Promise<AuthResponse> {
     if (this.useMockService) {
       return mockAuthService.register(userData);

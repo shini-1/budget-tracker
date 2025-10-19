@@ -201,6 +201,7 @@ export type RootStackParamList = {
   BusinessDetail: { businessId: string };
   UserProfile: undefined;
   BusinessProfile: undefined;
+  AddRestaurant: undefined;
   AdminDashboard: undefined;
 };
 
@@ -209,6 +210,8 @@ export type AuthStackParamList = {
   Register: undefined;
   ForgotPassword: undefined;
   RoleSelection: undefined;
+  BusinessSignup: undefined;
+  AdminSignup: undefined;
 };
 
 export type MainTabParamList = {

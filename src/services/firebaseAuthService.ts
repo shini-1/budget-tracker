@@ -1,15 +1,63 @@
 // Firebase Authentication Service
 
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail, onAuthStateChanged, updateProfile, deleteUser, getIdToken } from '@react-native-firebase/auth';
+import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, Timestamp } from '@react-native-firebase/firestore';
 import { User, UserRole, LoginForm, RegisterForm } from '../types';
 import { COLLECTIONS, getFirebaseErrorMessage } from '../config/firebase';
 
+// Firestore user data interface (matches what we store in Firestore)
+interface FirestoreUserData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber?: string;
+  role: UserRole;
+  profileImage?: string;
+  isVerified: boolean;
+  preferences: Record<string, any>;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
 class FirebaseAuthService {
+  // Fallback sign in method (for testing - skips Firestore data)
+  async signInBasic(email: string, password: string): Promise<User> {
+    try {
+      console.log('🔄 Using fallback authentication (no Firestore)...');
+      const userCredential = await signInWithEmailAndPassword(getAuth(), email, password);
+      console.log('✅ Basic authentication successful for user:', userCredential.user.email);
+
+      const user = userCredential.user;
+
+      // Return minimal user data without Firestore lookup
+      return {
+        id: user.uid,
+        email: user.email || '',
+        firstName: 'Test', // Default values for fallback
+        lastName: 'User',
+        phoneNumber: '',
+        role: 'user' as UserRole,
+        avatar: undefined,
+        isVerified: user.emailVerified,
+        createdAt: user.metadata.creationTime || new Date().toISOString(),
+        updatedAt: user.metadata.lastSignInTime || new Date().toISOString(),
+      };
+    } catch (error: any) {
+      console.error('Firebase basic authentication error:', {
+        code: error.code,
+        message: error.message,
+        fullError: error,
+      });
+      const errorMessage = getFirebaseErrorMessage(error.code);
+      throw new Error(errorMessage);
+    }
+  }
   // Sign in with email and password
   async signIn(email: string, password: string): Promise<User> {
     try {
-      const userCredential = await auth().signInWithEmailAndPassword(email, password);
+      console.log('Attempting to sign in user:', email);
+      const userCredential = await signInWithEmailAndPassword(getAuth(), email, password);
+      console.log('Sign in successful for user:', userCredential.user.email);
       const user = userCredential.user;
       
       if (!user) {
@@ -17,31 +65,69 @@ class FirebaseAuthService {
       }
 
       // Get user data from Firestore
-      const userDoc = await firestore()
-        .collection(COLLECTIONS.USERS)
-        .doc(user.uid)
-        .get();
+      const userDocRef = doc(collection(getFirestore(), COLLECTIONS.USERS), user.uid);
+      const userDoc = await getDoc(userDocRef);
 
-      if (!userDoc.exists) {
-        throw new Error('User profile not found');
+      // If user profile doesn't exist in Firestore, create it
+      if (!userDoc.exists()) {
+        console.log('User profile not found in Firestore, creating default profile...');
+        
+        // Extract name from email or use defaults
+        const emailName = user.email?.split('@')[0] || 'User';
+        const nameParts = emailName.split(/[._-]/);
+        const firstName = nameParts[0]?.charAt(0).toUpperCase() + nameParts[0]?.slice(1) || 'User';
+        const lastName = nameParts[1]?.charAt(0).toUpperCase() + nameParts[1]?.slice(1) || '';
+        
+        // Create default user profile
+        const defaultUserData = {
+          firstName,
+          lastName,
+          email: user.email || '',
+          phoneNumber: user.phoneNumber || '',
+          role: 'user' as UserRole,
+          profileImage: user.photoURL || null,
+          isVerified: user.emailVerified,
+          preferences: {},
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+
+        await setDoc(userDocRef, defaultUserData);
+        
+        return {
+          id: user.uid,
+          email: user.email || '',
+          firstName,
+          lastName,
+          phoneNumber: user.phoneNumber || undefined,
+          role: 'user' as UserRole,
+          avatar: user.photoURL || undefined,
+          isVerified: user.emailVerified,
+          createdAt: user.metadata.creationTime || new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
       }
 
-      const userData = userDoc.data();
+      const userData = userDoc.data() as FirestoreUserData;
       
       return {
         id: user.uid,
         email: user.email || '',
-        firstName: userData?.firstName || '',
-        lastName: userData?.lastName || '',
-        phoneNumber: userData?.phoneNumber || '',
-        role: userData?.role || 'user',
-        profileImage: userData?.profileImage || null,
-        isVerified: userData?.isVerified || false,
-        preferences: userData?.preferences || {},
-        createdAt: userData?.createdAt?.toDate() || new Date(),
-        updatedAt: userData?.updatedAt?.toDate() || new Date(),
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        phoneNumber: userData.phoneNumber,
+        role: userData.role,
+        avatar: userData.profileImage,
+        isVerified: userData.isVerified,
+        createdAt: userData.createdAt.toDate().toISOString(),
+        updatedAt: userData.updatedAt.toDate().toISOString(),
       };
     } catch (error: any) {
+      console.error('Firebase authentication error in signIn:', {
+        code: error.code,
+        message: error.message,
+        fullError: error,
+      });
       const errorMessage = getFirebaseErrorMessage(error.code);
       throw new Error(errorMessage);
     }
@@ -51,10 +137,7 @@ class FirebaseAuthService {
   async register(userData: RegisterForm): Promise<User> {
     try {
       // Create user account
-      const userCredential = await auth().createUserWithEmailAndPassword(
-        userData.email,
-        userData.password
-      );
+      const userCredential = await createUserWithEmailAndPassword(getAuth(), userData.email, userData.password);
       
       const user = userCredential.user;
       if (!user) {
@@ -62,7 +145,7 @@ class FirebaseAuthService {
       }
 
       // Update user profile
-      await user.updateProfile({
+      await updateProfile(user, {
         displayName: `${userData.firstName} ${userData.lastName}`,
       });
 
@@ -74,21 +157,24 @@ class FirebaseAuthService {
         lastName: userData.lastName,
         phoneNumber: userData.phoneNumber,
         role: userData.role,
+        avatar: undefined,
+        isVerified: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      await setDoc(doc(collection(getFirestore(), COLLECTIONS.USERS), user.uid), {
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        email: userData.email,
+        phoneNumber: userData.phoneNumber,
+        role: userData.role,
         profileImage: null,
         isVerified: false,
         preferences: {},
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      await firestore()
-        .collection(COLLECTIONS.USERS)
-        .doc(user.uid)
-        .set({
-          ...newUser,
-          createdAt: firestore.FieldValue.serverTimestamp(),
-          updatedAt: firestore.FieldValue.serverTimestamp(),
-        });
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
 
       return newUser;
     } catch (error: any) {
@@ -100,7 +186,7 @@ class FirebaseAuthService {
   // Sign out
   async signOut(): Promise<void> {
     try {
-      await auth().signOut();
+      await signOut(getAuth());
     } catch (error: any) {
       throw new Error('Failed to sign out');
     }
@@ -109,34 +195,31 @@ class FirebaseAuthService {
   // Get current user
   async getCurrentUser(): Promise<User | null> {
     try {
-      const user = auth().currentUser;
+      const auth = getAuth();
+      const user = auth.currentUser;
       if (!user) {
         return null;
       }
 
-      const userDoc = await firestore()
-        .collection(COLLECTIONS.USERS)
-        .doc(user.uid)
-        .get();
+      const userDoc = await getDoc(doc(collection(getFirestore(), COLLECTIONS.USERS), user.uid));
 
-      if (!userDoc.exists) {
+      if (!userDoc.exists()) {
         return null;
       }
 
-      const userData = userDoc.data();
+      const userData = userDoc.data() as FirestoreUserData;
       
       return {
         id: user.uid,
         email: user.email || '',
-        firstName: userData?.firstName || '',
-        lastName: userData?.lastName || '',
-        phoneNumber: userData?.phoneNumber || '',
-        role: userData?.role || 'user',
-        profileImage: userData?.profileImage || null,
-        isVerified: userData?.isVerified || false,
-        preferences: userData?.preferences || {},
-        createdAt: userData?.createdAt?.toDate() || new Date(),
-        updatedAt: userData?.updatedAt?.toDate() || new Date(),
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        phoneNumber: userData.phoneNumber,
+        role: userData.role,
+        avatar: userData.profileImage,
+        isVerified: userData.isVerified,
+        createdAt: userData.createdAt.toDate().toISOString(),
+        updatedAt: userData.updatedAt.toDate().toISOString(),
       };
     } catch (error: any) {
       console.error('Error getting current user:', error);
@@ -147,7 +230,7 @@ class FirebaseAuthService {
   // Send password reset email
   async sendPasswordResetEmail(email: string): Promise<void> {
     try {
-      await auth().sendPasswordResetEmail(email);
+      await sendPasswordResetEmail(getAuth(), email);
     } catch (error: any) {
       const errorMessage = getFirebaseErrorMessage(error.code);
       throw new Error(errorMessage);
@@ -157,13 +240,20 @@ class FirebaseAuthService {
   // Update user profile
   async updateUserProfile(userId: string, updates: Partial<User>): Promise<void> {
     try {
-      await firestore()
-        .collection(COLLECTIONS.USERS)
-        .doc(userId)
-        .update({
-          ...updates,
-          updatedAt: firestore.FieldValue.serverTimestamp(),
-        });
+      // Convert User interface fields to Firestore fields
+      const firestoreUpdates: Partial<FirestoreUserData> = {};
+
+      if (updates.firstName !== undefined) firestoreUpdates.firstName = updates.firstName;
+      if (updates.lastName !== undefined) firestoreUpdates.lastName = updates.lastName;
+      if (updates.email !== undefined) firestoreUpdates.email = updates.email;
+      if (updates.phoneNumber !== undefined) firestoreUpdates.phoneNumber = updates.phoneNumber;
+      if (updates.role !== undefined) firestoreUpdates.role = updates.role;
+      if (updates.avatar !== undefined) firestoreUpdates.profileImage = updates.avatar;
+      if (updates.isVerified !== undefined) firestoreUpdates.isVerified = updates.isVerified;
+
+      firestoreUpdates.updatedAt = serverTimestamp() as any;
+
+      await updateDoc(doc(collection(getFirestore(), COLLECTIONS.USERS), userId), firestoreUpdates);
     } catch (error: any) {
       throw new Error('Failed to update profile');
     }
@@ -172,19 +262,17 @@ class FirebaseAuthService {
   // Delete user account
   async deleteUser(): Promise<void> {
     try {
-      const user = auth().currentUser;
+      const auth = getAuth();
+      const user = auth.currentUser;
       if (!user) {
         throw new Error('No user logged in');
       }
 
       // Delete user document from Firestore
-      await firestore()
-        .collection(COLLECTIONS.USERS)
-        .doc(user.uid)
-        .delete();
+      await deleteDoc(doc(collection(getFirestore(), COLLECTIONS.USERS), user.uid));
 
       // Delete user account
-      await user.delete();
+      await deleteUser(user);
     } catch (error: any) {
       throw new Error('Failed to delete account');
     }
@@ -192,7 +280,7 @@ class FirebaseAuthService {
 
   // Listen to authentication state changes
   onAuthStateChanged(callback: (user: User | null) => void): () => void {
-    return auth().onAuthStateChanged(async (firebaseUser) => {
+    return onAuthStateChanged(getAuth(), async (firebaseUser) => {
       if (firebaseUser) {
         try {
           const user = await this.getCurrentUser();
@@ -210,12 +298,13 @@ class FirebaseAuthService {
   // Refresh token
   async refreshToken(): Promise<string> {
     try {
-      const user = auth().currentUser;
+      const auth = getAuth();
+      const user = auth.currentUser;
       if (!user) {
         throw new Error('No user logged in');
       }
 
-      const token = await user.getIdToken(true);
+      const token = await getIdToken(user, true);
       return token;
     } catch (error: any) {
       throw new Error('Failed to refresh token');
@@ -225,12 +314,13 @@ class FirebaseAuthService {
   // Get ID token
   async getIdToken(): Promise<string | null> {
     try {
-      const user = auth().currentUser;
+      const auth = getAuth();
+      const user = auth.currentUser;
       if (!user) {
         return null;
       }
 
-      return await user.getIdToken();
+      return await getIdToken(user);
     } catch (error: any) {
       console.error('Error getting ID token:', error);
       return null;

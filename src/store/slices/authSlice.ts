@@ -1,9 +1,41 @@
 // Authentication Redux Slice
 
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthState, User, LoginForm, RegisterForm } from '../../types';
 import { authService } from '../../services/authService';
 import { STORAGE_KEYS } from '../../constants';
+
+// Helper functions for AsyncStorage operations
+const storeAuthData = async (token: string, refreshToken: string | null, user: User) => {
+  try {
+    await AsyncStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
+    if (refreshToken) {
+      await AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+    }
+    await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(user));
+  } catch (error) {
+    console.error('Failed to store auth data:', error);
+  }
+};
+
+const clearAuthData = async () => {
+  try {
+    await AsyncStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+    await AsyncStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+    await AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA);
+  } catch (error) {
+    console.error('Failed to clear auth data:', error);
+  }
+};
+
+const updateStoredUser = async (user: User) => {
+  try {
+    await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(user));
+  } catch (error) {
+    console.error('Failed to update stored user:', error);
+  }
+};
 
 // Initial state
 const initialState: AuthState = {
@@ -21,6 +53,18 @@ export const loginUser = createAsyncThunk(
   async (credentials: LoginForm, { rejectWithValue }) => {
     try {
       const response = await authService.login(credentials);
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Login failed');
+    }
+  }
+);
+
+export const loginUserBasic = createAsyncThunk(
+  'auth/loginUserBasic',
+  async (credentials: LoginForm, { rejectWithValue }) => {
+    try {
+      const response = await authService.loginBasic(credentials);
       return response;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Login failed');
@@ -79,9 +123,9 @@ export const loadStoredAuth = createAsyncThunk(
   'auth/loadStoredAuth',
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
-      const refreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
-      const userData = localStorage.getItem(STORAGE_KEYS.USER_DATA);
+      const token = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+      const refreshToken = await AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+      const userData = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
       
       if (token && userData) {
         const user = JSON.parse(userData);
@@ -113,8 +157,8 @@ const authSlice = createSlice({
     updateUser: (state, action: PayloadAction<Partial<User>>) => {
       if (state.user) {
         state.user = { ...state.user, ...action.payload };
-        // Update stored user data
-        localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(state.user));
+        // Update stored user data asynchronously
+        updateStoredUser(state.user);
       }
     },
   },
@@ -133,12 +177,30 @@ const authSlice = createSlice({
         state.isAuthenticated = true;
         state.error = null;
         
-        // Store auth data
-        localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, action.payload.token);
-        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, action.payload.refreshToken);
-        localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(action.payload.user));
+        // Store auth data asynchronously
+        storeAuthData(action.payload.token, action.payload.refreshToken, action.payload.user);
       })
       .addCase(loginUser.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+        state.isAuthenticated = false;
+      })
+      .addCase(loginUserBasic.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(loginUserBasic.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
+        state.refreshToken = action.payload.refreshToken;
+        state.isAuthenticated = true;
+        state.error = null;
+        
+        // Store auth data asynchronously
+        storeAuthData(action.payload.token, action.payload.refreshToken, action.payload.user);
+      })
+      .addCase(loginUserBasic.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
         state.isAuthenticated = false;
@@ -158,10 +220,8 @@ const authSlice = createSlice({
         state.isAuthenticated = true;
         state.error = null;
         
-        // Store auth data
-        localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, action.payload.token);
-        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, action.payload.refreshToken);
-        localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(action.payload.user));
+        // Store auth data asynchronously
+        storeAuthData(action.payload.token, action.payload.refreshToken, action.payload.user);
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -175,9 +235,11 @@ const authSlice = createSlice({
         state.token = action.payload.token;
         state.refreshToken = action.payload.refreshToken;
         
-        // Update stored tokens
-        localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, action.payload.token);
-        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, action.payload.refreshToken);
+        // Update stored tokens asynchronously
+        if (state.token && state.refreshToken) {
+          AsyncStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, state.token);
+          AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, state.refreshToken);
+        }
       })
       .addCase(refreshAuthToken.rejected, (state) => {
         // Clear auth data on refresh failure
@@ -186,10 +248,8 @@ const authSlice = createSlice({
         state.refreshToken = null;
         state.isAuthenticated = false;
         
-        // Clear stored auth data
-        localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-        localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
-        localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+        // Clear stored auth data asynchronously
+        clearAuthData();
       });
 
     // Logout
@@ -201,10 +261,8 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.error = null;
         
-        // Clear stored auth data
-        localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-        localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
-        localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+        // Clear stored auth data asynchronously
+        clearAuthData();
       });
 
     // Load stored auth
