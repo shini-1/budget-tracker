@@ -78,9 +78,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.coldblooded.foodventurer"
+    namespace "com.codeblooded.foodventurer"
     defaultConfig {
-        applicationId "com.coldblooded.foodventurer"
+        applicationId "com.codeblooded.foodventurer"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

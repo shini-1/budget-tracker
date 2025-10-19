@@ -1,4 +1,4 @@
-package com.coldblooded.foodventurer
+package com.codeblooded.foodventurer
 
 import android.app.Application
 import com.facebook.react.PackageList

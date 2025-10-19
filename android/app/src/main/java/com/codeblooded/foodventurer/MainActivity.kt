@@ -1,4 +1,4 @@
-package com.coldblooded.foodventurer
+package com.codeblooded.foodventurer
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
