@@ -30,15 +30,17 @@
 
 ## 🛠️ Technical Stack
 
-- **Framework**: React Native with TypeScript
+- **Framework**: React Native CLI with TypeScript
 - **Navigation**: React Navigation v6
 - **State Management**: Redux Toolkit
-- **Maps**: Google Maps API
-- **Authentication**: JWT with role-based access control
+- **Maps**: Google Maps API & React Native Maps
+- **Backend**: Firebase (Firestore, Authentication, Cloud Messaging)
+- **Authentication**: Firebase Auth with role-based access control
 - **UI Components**: Custom components with consistent design system
-- **Location Services**: Expo Location
-- **Image Handling**: Expo Image Picker
-- **Notifications**: Expo Notifications
+- **Location Services**: react-native-geolocation-service
+- **Image Handling**: react-native-image-picker
+- **Notifications**: Firebase Cloud Messaging
+- **Permissions**: react-native-permissions
 
 ## 📱 App Structure
 
@@ -237,24 +239,30 @@ If you're having issues getting the above steps to work, see the [Troubleshootin
 - [ ] **Testing & Deployment** - Unit tests, integration tests, and deployment
 
 ### 📝 **Recent Updates**
-- **October 18, 2025** - Business Owner Panel Development
-  - ✅ Created comprehensive Business Dashboard
-    - Analytics overview with period selector
-    - Stats cards for views, clicks, calls, reviews
-    - Quick action buttons for common tasks
-    - Recent reviews display
-    - Performance insights and tips
-  - ✅ Built Restaurant Information Management
-    - Complete form for restaurant details
-    - Category and price range selection
-    - Contact information management
-    - Location editing with validation
-  - ✅ Implemented Menu Management System
-    - Full CRUD operations (Create, Read, Update, Delete)
-    - Category-based organization
-    - Availability toggle for items
-    - Modal-based add/edit interface
-    - Price and description management
+- **October 18, 2025** - Application Build Fixed & Expo Migration
+  - ✅ **Package Name Corrected**
+    - Fixed package name from `com.coldblooded.foodventurer` to `com.codeblooded.foodventurer`
+    - Updated all configuration files and source directories
+    - Resolved autolinking issues
+  - ✅ **Expo to React Native CLI Migration**
+    - Removed all Expo dependencies (expo, expo-location, expo-image-picker, expo-notifications)
+    - Integrated React Native alternatives:
+      - `react-native-geolocation-service` for location services
+      - `react-native-image-picker` for photo selection
+      - `react-native-permissions` for permission handling
+      - `@react-native-firebase/messaging` for push notifications
+  - ✅ **Firebase Integration Complete**
+    - Full Firebase service layer implemented
+    - Firestore collections and services configured
+    - Authentication, Firestore, and Cloud Messaging integrated
+  - ✅ **Build Configuration Fixed**
+    - Gradle 8.13 with JDK 21
+    - New Architecture disabled for compatibility
+    - Android build successfully configured
+  - ✅ **Business Owner Panel Development**
+    - Comprehensive Business Dashboard
+    - Restaurant Information Management
+    - Menu Management System with CRUD operations
   - 📦 All changes committed and pushed to GitHub
   
 *Last updated: October 18, 2025*
@@ -305,31 +313,46 @@ API_BASE_URL=https://your-api-domain.com/api
 ```
 
 ### Android Configuration
-- Package name: `com.coldblooded.foodventurer`
-- Minimum SDK: 21
-- Target SDK: 34
+- Package name: `com.codeblooded.foodventurer`
+- Minimum SDK: 24
+- Target SDK: 36
+- Gradle: 8.13
+- JDK: 21
+- New Architecture: Disabled (for compatibility)
 
 ### Firebase Configuration
-The app is configured with Firebase for analytics and future features:
+The app is fully integrated with Firebase:
 
 **Android Setup:**
 - Google Services plugin: ✅ Applied
 - Firebase BoM: v34.4.0
-- Firebase Analytics: ✅ Integrated
+- Package name: `com.codeblooded.foodventurer`
 
-**To complete Firebase setup:**
-1. Create a Firebase project at [Firebase Console](https://console.firebase.google.com)
-2. Add your Android app with package name: `com.coldblooded.foodventurer`
-3. Download `google-services.json` and place it in `android/app/`
-4. For iOS, download `GoogleService-Info.plist` and add to Xcode project
+**Integrated Firebase Services:**
+- ✅ Firebase Authentication - User authentication and management
+- ✅ Cloud Firestore - Real-time database for app data
+- ✅ Cloud Messaging - Push notifications
+- ✅ Firebase Analytics - App analytics and insights
 
-**Available for integration:**
-- 🔥 Firebase Authentication
-- 🔥 Cloud Firestore
-- 🔥 Realtime Database
-- 🔥 Cloud Storage
-- 🔥 Cloud Messaging (Push Notifications)
-- 🔥 Crashlytics
+**Firebase Collections:**
+- `users` - User profiles and preferences
+- `businesses` - Restaurant information and details
+- `reviews` - User reviews and ratings
+- `menus` - Restaurant menus and items
+- `menuItems` - Individual menu items
+- `favorites` - User favorite restaurants
+- `notifications` - Push notification data
+- `analytics` - Analytics events
+- `businessHours` - Restaurant operating hours
+- `photos` - Restaurant photos and images
+
+**Service Layer:**
+- `AuthService` - Authentication operations
+- `BusinessService` - Business CRUD and search
+- `ReviewService` - Review management
+- `MenuService` - Menu and item management
+- `FavoritesService` - Favorites management
+- `NotificationService` - Push notification handling
 
 ## 📱 App Screenshots
 
