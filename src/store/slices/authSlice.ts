@@ -123,17 +123,27 @@ export const loadStoredAuth = createAsyncThunk(
   'auth/loadStoredAuth',
   async (_, { rejectWithValue }) => {
     try {
-      const token = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
-      const refreshToken = await AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
-      const userData = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
-      
-      if (token && userData) {
-        const user = JSON.parse(userData);
-        return { user, token, refreshToken };
-      }
-      
-      return null;
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Auth loading timeout')), 5000);
+      });
+
+      const authPromise = (async () => {
+        const token = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+        const refreshToken = await AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+        const userData = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
+        
+        if (token && userData) {
+          const user = JSON.parse(userData);
+          return { user, token, refreshToken };
+        }
+        
+        return null;
+      })();
+
+      return await Promise.race([authPromise, timeoutPromise]);
     } catch (error: any) {
+      console.warn('Auth loading error:', error.message);
       return rejectWithValue(error.message || 'Failed to load stored auth');
     }
   }
@@ -267,13 +277,23 @@ const authSlice = createSlice({
 
     // Load stored auth
     builder
+      .addCase(loadStoredAuth.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
       .addCase(loadStoredAuth.fulfilled, (state, action) => {
+        state.isLoading = false;
         if (action.payload) {
           state.user = action.payload.user;
           state.token = action.payload.token;
           state.refreshToken = action.payload.refreshToken;
           state.isAuthenticated = true;
         }
+      })
+      .addCase(loadStoredAuth.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+        console.warn('Auth loading failed:', action.payload);
       });
   },
 });

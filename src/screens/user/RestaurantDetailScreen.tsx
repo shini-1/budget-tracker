@@ -1,4 +1,4 @@
-// Enhanced Restaurant Detail Screen with Photos, Reviews, and Menu
+// Restaurant Detail Screen with Google Maps
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -9,64 +9,87 @@ import {
   Image,
   TouchableOpacity,
   Dimensions,
-  Alert,
   Linking,
+  Platform,
+  ActivityIndicator,
 } from 'react-native';
-import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState, AppDispatch } from '../../store';
-import { Business, Review } from '../../types';
-import { COLORS, TYPOGRAPHY, SPACING } from '../../constants';
-import { addFavorite, removeFavorite } from '../../store/slices/favoritesSlice';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import { COLORS, TYPOGRAPHY, SPACING, AMENITIES } from '../../constants';
+import { mockBusinessService } from '../../services/mockBusinessService';
+import { firestoreBusinessService } from '../../services/firestoreBusinessService';
+import { Business } from '../../types';
 
-const { width } = Dimensions.get('window');
-
-type RouteParams = {
-  RestaurantDetail: {
-    businessId: string;
-  };
-};
+const { width, height } = Dimensions.get('window');
 
 export const RestaurantDetailScreen: React.FC = () => {
-  const route = useRoute<RouteProp<RouteParams, 'RestaurantDetail'>>();
   const navigation = useNavigation();
-  const dispatch = useDispatch<AppDispatch>();
-  
-  const { businessId } = route.params;
-  const { businesses } = useSelector((state: RootState) => state.business);
-  const { favorites } = useSelector((state: RootState) => state.favorites);
+  const route = useRoute();
+  const { restaurantId } = route.params as { restaurantId: string };
   
   const [restaurant, setRestaurant] = useState<Business | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'menu' | 'reviews'>('overview');
+  const [isLoading, setIsLoading] = useState(true);
+  const [showMap, setShowMap] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [markerLocation, setMarkerLocation] = useState<{latitude: number; longitude: number} | null>(null);
 
   useEffect(() => {
-    const found = businesses.find((b) => b.id === businessId);
-    if (found) {
-      setRestaurant(found);
-    }
-  }, [businessId, businesses]);
+    loadRestaurant();
+  }, [restaurantId]);
 
-  if (!restaurant) {
+  const loadRestaurant = async () => {
+    try {
+      setIsLoading(true);
+      const data = await mockBusinessService.getBusinessById(restaurantId);
+      setRestaurant(data);
+      
+      // Try to load custom marker from Firestore (optional - fails gracefully if Firestore not configured)
+      try {
+        const marker = await firestoreBusinessService.getBusinessMarker(restaurantId);
+        if (marker) {
+          setMarkerLocation({
+            latitude: marker.latitude,
+            longitude: marker.longitude,
+          });
+        }
+      } catch (markerError) {
+        // Firestore not configured or marker doesn't exist - use business location
+        console.log('No custom marker found, using business location');
+      }
+    } catch (error) {
+      console.error('Error loading restaurant:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>Restaurant not found</Text>
+      <View style={styles.errorContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>Loading restaurant...</Text>
       </View>
     );
   }
 
-  const isFavorite = favorites.some((fav) => fav.id === restaurant.id);
-
-  const handleToggleFavorite = () => {
-    if (isFavorite) {
-      dispatch(removeFavorite(restaurant.id));
-    } else {
-      dispatch(addFavorite(restaurant));
-    }
-  };
+  if (!restaurant) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>Restaurant not found</Text>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.backButtonText}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   const handleCall = () => {
-    Linking.openURL(`tel:${restaurant.phoneNumber}`);
+    if (restaurant.phoneNumber) {
+      Linking.openURL(`tel:${restaurant.phoneNumber}`);
+    }
   };
 
   const handleWebsite = () => {
@@ -77,239 +100,225 @@ export const RestaurantDetailScreen: React.FC = () => {
 
   const handleDirections = () => {
     const { latitude, longitude } = restaurant.location;
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
-    Linking.openURL(url);
+    const scheme = Platform.select({
+      ios: 'maps:0,0?q=',
+      android: 'geo:0,0?q=',
+    });
+    const latLng = `${latitude},${longitude}`;
+    const label = restaurant.name;
+    const url = Platform.select({
+      ios: `${scheme}${label}@${latLng}`,
+      android: `${scheme}${latLng}(${label})`,
+    });
+
+    if (url) {
+      Linking.openURL(url);
+    }
   };
 
-  const renderStars = (rating: number) => {
-    const stars = [];
-    for (let i = 1; i <= 5; i++) {
-      stars.push(
-        <Text key={i} style={styles.star}>
-          {i <= rating ? '⭐' : '☆'}
-        </Text>
-      );
-    }
-    return stars;
+  const getDayName = (): 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' => {
+    const days: ('sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday')[] = 
+      ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    return days[new Date().getDay()];
   };
+
+  const todayHours = restaurant.hours?.[getDayName()];
+  const isOpenNow = todayHours?.isOpen || false;
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Image Gallery */}
-      <View style={styles.imageGallery}>
-        <ScrollView
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={(event) => {
-            const index = Math.round(
-              event.nativeEvent.contentOffset.x / width
-            );
-            setSelectedImageIndex(index);
-          }}
-        >
-          {restaurant.images.map((image, index) => (
-            <Image
-              key={index}
-              source={{ uri: image }}
-              style={styles.restaurantImage}
-              resizeMode="cover"
-            />
-          ))}
-        </ScrollView>
-        <View style={styles.imagePagination}>
-          {restaurant.images.map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.paginationDot,
-                index === selectedImageIndex && styles.paginationDotActive,
-              ]}
-            />
-          ))}
-        </View>
-        
-        {/* Favorite Button */}
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
         <TouchableOpacity
-          style={styles.favoriteButton}
-          onPress={handleToggleFavorite}
-          activeOpacity={0.7}
+          style={styles.headerBackButton}
+          onPress={() => navigation.goBack()}
         >
-          <Text style={styles.favoriteIcon}>{isFavorite ? '❤️' : '🤍'}</Text>
+          <Text style={styles.headerBackText}>←</Text>
         </TouchableOpacity>
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          {restaurant.name}
+        </Text>
+        <View style={styles.headerSpacer} />
       </View>
 
-      {/* Restaurant Info */}
-      <View style={styles.infoSection}>
-        <Text style={styles.restaurantName}>{restaurant.name}</Text>
-        
-        <View style={styles.ratingRow}>
-          <View style={styles.starsContainer}>
-            {renderStars(Math.round(restaurant.rating))}
-          </View>
-          <Text style={styles.ratingText}>
-            {restaurant.rating.toFixed(1)} ({restaurant.reviewCount} reviews)
-          </Text>
-        </View>
-
-        <View style={styles.metaRow}>
-          <Text style={styles.metaText}>{restaurant.category}</Text>
-          <Text style={styles.metaDivider}>•</Text>
-          <Text style={styles.metaText}>{restaurant.priceRange}</Text>
-          {restaurant.isVerified && (
-            <>
-              <Text style={styles.metaDivider}>•</Text>
-              <Text style={styles.verifiedBadge}>✓ Verified</Text>
-            </>
-          )}
-        </View>
-
-        <Text style={styles.description}>{restaurant.description}</Text>
-
-        {/* Action Buttons */}
-        <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={handleCall}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.actionButtonIcon}>📞</Text>
-            <Text style={styles.actionButtonText}>Call</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={handleDirections}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.actionButtonIcon}>🗺️</Text>
-            <Text style={styles.actionButtonText}>Directions</Text>
-          </TouchableOpacity>
-
-          {restaurant.website && (
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={handleWebsite}
-              activeOpacity={0.7}
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Image Gallery */}
+        <View style={styles.imageGallery}>
+          <Image
+            source={{
+              uri: restaurant.images?.[selectedImageIndex] || 'https://via.placeholder.com/400x300',
+            }}
+            style={styles.mainImage}
+          />
+          {restaurant.images && restaurant.images.length > 1 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.thumbnailScroll}
             >
-              <Text style={styles.actionButtonIcon}>🌐</Text>
-              <Text style={styles.actionButtonText}>Website</Text>
-            </TouchableOpacity>
+              {restaurant.images.map((img, index) => (
+                <TouchableOpacity
+                  key={index}
+                  onPress={() => setSelectedImageIndex(index)}
+                >
+                  <Image
+                    source={{ uri: img }}
+                    style={[
+                      styles.thumbnail,
+                      selectedImageIndex === index && styles.thumbnailActive,
+                    ]}
+                  />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           )}
         </View>
-      </View>
 
-      {/* Tabs */}
-      <View style={styles.tabsContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'overview' && styles.tabActive]}
-          onPress={() => setActiveTab('overview')}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === 'overview' && styles.tabTextActive,
-            ]}
-          >
-            Overview
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'menu' && styles.tabActive]}
-          onPress={() => setActiveTab('menu')}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === 'menu' && styles.tabTextActive,
-            ]}
-          >
-            Menu
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'reviews' && styles.tabActive]}
-          onPress={() => setActiveTab('reviews')}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === 'reviews' && styles.tabTextActive,
-            ]}
-          >
-            Reviews
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Tab Content */}
-      <View style={styles.tabContent}>
-        {activeTab === 'overview' && (
-          <View>
-            {/* Hours */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Hours</Text>
-              {Object.entries(restaurant.hours).map(([day, hours]) => (
-                <View key={day} style={styles.hoursRow}>
-                  <Text style={styles.dayText}>
-                    {day.charAt(0).toUpperCase() + day.slice(1)}
-                  </Text>
-                  <Text style={styles.hoursText}>
-                    {hours.isOpen
-                      ? `${hours.openTime} - ${hours.closeTime}`
-                      : 'Closed'}
-                  </Text>
-                </View>
-              ))}
-            </View>
-
-            {/* Amenities */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Amenities</Text>
-              <View style={styles.amenitiesContainer}>
-                {restaurant.amenities.map((amenity, index) => (
-                  <View key={index} style={styles.amenityChip}>
-                    <Text style={styles.amenityText}>{amenity}</Text>
-                  </View>
-                ))}
+        {/* Restaurant Info */}
+        <View style={styles.infoSection}>
+          <View style={styles.titleRow}>
+            <Text style={styles.restaurantName}>{restaurant.name}</Text>
+            {restaurant.isVerified && (
+              <View style={styles.verifiedBadge}>
+                <Text style={styles.verifiedText}>✓ Verified</Text>
               </View>
+            )}
+          </View>
+
+          <View style={styles.metaRow}>
+            <View style={styles.ratingBox}>
+              <Text style={styles.ratingText}>⭐ {restaurant.rating?.toFixed(1)}</Text>
+              <Text style={styles.reviewText}>({restaurant.reviewCount} reviews)</Text>
             </View>
+            <Text style={styles.priceText}>{restaurant.priceRange}</Text>
+            <View style={[styles.statusBadge, isOpenNow ? styles.openBadge : styles.closedBadge]}>
+              <Text style={styles.statusText}>{isOpenNow ? 'Open' : 'Closed'}</Text>
+            </View>
+          </View>
 
-            {/* Location */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Location</Text>
-              <Text style={styles.addressText}>
-                {restaurant.location.address}
-              </Text>
-              <Text style={styles.addressText}>
-                {restaurant.location.city}, {restaurant.location.state}{' '}
-                {restaurant.location.postalCode}
-              </Text>
+          <Text style={styles.description}>{restaurant.description}</Text>
+        </View>
+
+        {/* Quick Actions */}
+        <View style={styles.actionsSection}>
+          <TouchableOpacity style={styles.actionButton} onPress={handleCall}>
+            <Text style={styles.actionIcon}>📞</Text>
+            <Text style={styles.actionText}>Call</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton} onPress={handleDirections}>
+            <Text style={styles.actionIcon}>🧭</Text>
+            <Text style={styles.actionText}>Directions</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton} onPress={handleWebsite}>
+            <Text style={styles.actionIcon}>🌐</Text>
+            <Text style={styles.actionText}>Website</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => setShowMap(!showMap)}
+          >
+            <Text style={styles.actionIcon}>🗺️</Text>
+            <Text style={styles.actionText}>{showMap ? 'Hide' : 'Show'} Map</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Google Maps Toggle */}
+        {showMap && (
+          <View style={styles.mapSection}>
+            <Text style={styles.sectionTitle}>📍 Location</Text>
+            <MapView
+              provider={PROVIDER_GOOGLE}
+              style={styles.map}
+              initialRegion={{
+                latitude: markerLocation?.latitude || restaurant.location.latitude,
+                longitude: markerLocation?.longitude || restaurant.location.longitude,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              }}
+            >
+              <Marker
+                coordinate={{
+                  latitude: markerLocation?.latitude || restaurant.location.latitude,
+                  longitude: markerLocation?.longitude || restaurant.location.longitude,
+                }}
+                title={restaurant.name}
+                description={markerLocation ? '📍 Owner-placed marker' : restaurant.location.address}
+                pinColor={COLORS.primary}
+              />
+            </MapView>
+            {markerLocation && (
+              <View style={styles.markerBadge}>
+                <Text style={styles.markerBadgeText}>✓ Owner-verified location</Text>
+              </View>
+            )}
+            <View style={styles.addressBox}>
+              <Text style={styles.addressText}>📍 {restaurant.location.address}</Text>
             </View>
           </View>
         )}
 
-        {activeTab === 'menu' && (
+        {/* Contact Information */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>📞 Contact Information</Text>
+          <View style={styles.contactItem}>
+            <Text style={styles.contactLabel}>Phone:</Text>
+            <Text style={styles.contactValue}>{restaurant.phoneNumber}</Text>
+          </View>
+          {restaurant.email && (
+            <View style={styles.contactItem}>
+              <Text style={styles.contactLabel}>Email:</Text>
+              <Text style={styles.contactValue}>{restaurant.email}</Text>
+            </View>
+          )}
+          {restaurant.website && (
+            <View style={styles.contactItem}>
+              <Text style={styles.contactLabel}>Website:</Text>
+              <Text style={styles.contactValue}>{restaurant.website}</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Opening Hours */}
+        {restaurant.hours && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Menu</Text>
-            <Text style={styles.comingSoonText}>
-              Menu items will be displayed here
-            </Text>
+            <Text style={styles.sectionTitle}>🕐 Opening Hours</Text>
+            {Object.entries(restaurant.hours).map(([day, hours]) => (
+              <View key={day} style={styles.hoursRow}>
+                <Text style={styles.dayText}>
+                  {day.charAt(0).toUpperCase() + day.slice(1)}
+                </Text>
+                <Text style={styles.hoursText}>
+                  {hours.isOpen
+                    ? `${hours.openTime} - ${hours.closeTime}`
+                    : 'Closed'}
+                </Text>
+              </View>
+            ))}
           </View>
         )}
 
-        {activeTab === 'reviews' && (
+        {/* Amenities */}
+        {restaurant.amenities && restaurant.amenities.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Reviews</Text>
-            <Text style={styles.comingSoonText}>
-              Customer reviews will be displayed here
-            </Text>
+            <Text style={styles.sectionTitle}>✨ Amenities</Text>
+            <View style={styles.amenitiesGrid}>
+              {restaurant.amenities.map((amenity) => {
+                const amenityInfo = AMENITIES.find((a) => a.value === amenity);
+                return (
+                  <View key={amenity} style={styles.amenityChip}>
+                    <Text style={styles.amenityIcon}>{amenityInfo?.icon || '•'}</Text>
+                    <Text style={styles.amenityText}>{amenityInfo?.label || amenity}</Text>
+                  </View>
+                );
+              })}
+            </View>
           </View>
         )}
-      </View>
-    </ScrollView>
+
+        {/* Footer Spacing */}
+        <View style={styles.footer} />
+      </ScrollView>
+    </View>
   );
 };
 
@@ -318,173 +327,217 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  errorText: {
-    fontSize: TYPOGRAPHY.fontSize.lg,
-    color: COLORS.text.secondary,
-    textAlign: 'center',
-    marginTop: SPACING.xxxl,
-  },
-  imageGallery: {
-    height: 300,
-    position: 'relative',
-  },
-  restaurantImage: {
-    width: width,
-    height: 300,
-  },
-  imagePagination: {
-    position: 'absolute',
-    bottom: SPACING.md,
-    left: 0,
-    right: 0,
+  header: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: SPACING.xs,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.md,
+    paddingTop: Platform.OS === 'ios' ? 50 : SPACING.md,
+    paddingBottom: SPACING.md,
+    backgroundColor: COLORS.primary,
+    elevation: 4,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
-  paginationDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-  },
-  paginationDotActive: {
-    backgroundColor: COLORS.surface,
-  },
-  favoriteButton: {
-    position: 'absolute',
-    top: SPACING.md,
-    right: SPACING.md,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: COLORS.surface,
+  headerBackButton: {
+    width: 40,
+    height: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
   },
-  favoriteIcon: {
-    fontSize: 24,
+  headerBackText: {
+    fontSize: 28,
+    color: COLORS.text.onPrimary,
   },
-  infoSection: {
-    padding: SPACING.md,
+  headerTitle: {
+    flex: 1,
+    fontSize: TYPOGRAPHY.fontSize.lg,
+    fontWeight: 'bold',
+    color: COLORS.text.onPrimary,
+    textAlign: 'center',
+    marginHorizontal: SPACING.sm,
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  imageGallery: {
     backgroundColor: COLORS.surface,
   },
+  mainImage: {
+    width: width,
+    height: 250,
+    backgroundColor: COLORS.surfaceVariant,
+  },
+  thumbnailScroll: {
+    padding: SPACING.sm,
+  },
+  thumbnail: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    marginRight: SPACING.sm,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  thumbnailActive: {
+    borderColor: COLORS.primary,
+  },
+  infoSection: {
+    padding: SPACING.lg,
+    backgroundColor: COLORS.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.divider,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
   restaurantName: {
+    flex: 1,
     fontSize: TYPOGRAPHY.fontSize.xxl,
     fontWeight: 'bold',
     color: COLORS.text.primary,
-    marginBottom: SPACING.sm,
   },
-  ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
+  verifiedBadge: {
+    backgroundColor: COLORS.secondary,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: 12,
   },
-  starsContainer: {
-    flexDirection: 'row',
-    marginRight: SPACING.sm,
-  },
-  star: {
-    fontSize: 16,
-  },
-  ratingText: {
-    fontSize: TYPOGRAPHY.fontSize.sm,
-    color: COLORS.text.secondary,
+  verifiedText: {
+    color: COLORS.text.onSecondary,
+    fontSize: TYPOGRAPHY.fontSize.xs,
+    fontWeight: 'bold',
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: SPACING.md,
+    gap: SPACING.md,
   },
-  metaText: {
-    fontSize: TYPOGRAPHY.fontSize.sm,
-    color: COLORS.text.secondary,
-    textTransform: 'capitalize',
+  ratingBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  metaDivider: {
-    marginHorizontal: SPACING.sm,
-    color: COLORS.text.secondary,
-  },
-  verifiedBadge: {
-    fontSize: TYPOGRAPHY.fontSize.sm,
-    color: COLORS.success,
+  ratingText: {
+    fontSize: TYPOGRAPHY.fontSize.md,
     fontWeight: '600',
+    color: COLORS.primary,
+    marginRight: SPACING.xs,
+  },
+  reviewText: {
+    fontSize: TYPOGRAPHY.fontSize.sm,
+    color: COLORS.text.secondary,
+  },
+  priceText: {
+    fontSize: TYPOGRAPHY.fontSize.md,
+    fontWeight: '600',
+    color: COLORS.secondary,
+  },
+  statusBadge: {
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: 12,
+  },
+  openBadge: {
+    backgroundColor: COLORS.success,
+  },
+  closedBadge: {
+    backgroundColor: COLORS.error,
+  },
+  statusText: {
+    color: COLORS.text.onPrimary,
+    fontSize: TYPOGRAPHY.fontSize.xs,
+    fontWeight: 'bold',
   },
   description: {
     fontSize: TYPOGRAPHY.fontSize.md,
-    color: COLORS.text.primary,
-    lineHeight: 22,
-    marginBottom: SPACING.md,
+    color: COLORS.text.secondary,
+    lineHeight: 24,
   },
-  actionButtons: {
+  actionsSection: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingTop: SPACING.md,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    padding: SPACING.lg,
+    backgroundColor: COLORS.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.divider,
   },
   actionButton: {
     alignItems: 'center',
-    padding: SPACING.sm,
+    minWidth: 70,
   },
-  actionButtonIcon: {
-    fontSize: 24,
+  actionIcon: {
+    fontSize: 28,
     marginBottom: SPACING.xs,
   },
-  actionButtonText: {
+  actionText: {
     fontSize: TYPOGRAPHY.fontSize.sm,
     color: COLORS.text.primary,
     fontWeight: '500',
   },
-  tabsContainer: {
-    flexDirection: 'row',
+  mapSection: {
+    padding: SPACING.lg,
     backgroundColor: COLORS.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
-  tab: {
-    flex: 1,
-    paddingVertical: SPACING.md,
-    alignItems: 'center',
+  map: {
+    width: '100%',
+    height: 250,
+    borderRadius: 12,
+    marginTop: SPACING.md,
   },
-  tabActive: {
-    borderBottomWidth: 2,
-    borderBottomColor: COLORS.primary,
+  addressBox: {
+    marginTop: SPACING.md,
+    padding: SPACING.md,
+    backgroundColor: COLORS.surfaceVariant,
+    borderRadius: 8,
   },
-  tabText: {
+  addressText: {
     fontSize: TYPOGRAPHY.fontSize.md,
-    color: COLORS.text.secondary,
-    fontWeight: '500',
-  },
-  tabTextActive: {
-    color: COLORS.primary,
-    fontWeight: '600',
-  },
-  tabContent: {
-    backgroundColor: COLORS.surface,
+    color: COLORS.text.primary,
   },
   section: {
-    padding: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    padding: SPACING.lg,
+    backgroundColor: COLORS.surface,
+    marginTop: SPACING.sm,
   },
   sectionTitle: {
     fontSize: TYPOGRAPHY.fontSize.lg,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: COLORS.text.primary,
     marginBottom: SPACING.md,
+  },
+  contactItem: {
+    flexDirection: 'row',
+    marginBottom: SPACING.sm,
+  },
+  contactLabel: {
+    fontSize: TYPOGRAPHY.fontSize.md,
+    fontWeight: '600',
+    color: COLORS.text.secondary,
+    width: 80,
+  },
+  contactValue: {
+    flex: 1,
+    fontSize: TYPOGRAPHY.fontSize.md,
+    color: COLORS.text.primary,
   },
   hoursRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: SPACING.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.divider,
   },
   dayText: {
     fontSize: TYPOGRAPHY.fontSize.md,
+    fontWeight: '500',
     color: COLORS.text.primary,
     textTransform: 'capitalize',
   },
@@ -492,32 +545,77 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.fontSize.md,
     color: COLORS.text.secondary,
   },
-  amenitiesContainer: {
+  amenitiesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: SPACING.sm,
   },
   amenityChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surfaceVariant,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.background,
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: COLORS.border,
+  },
+  amenityIcon: {
+    fontSize: 16,
+    marginRight: SPACING.xs,
   },
   amenityText: {
     fontSize: TYPOGRAPHY.fontSize.sm,
     color: COLORS.text.primary,
   },
-  addressText: {
-    fontSize: TYPOGRAPHY.fontSize.md,
-    color: COLORS.text.primary,
-    marginBottom: SPACING.xs,
+  footer: {
+    height: SPACING.xl,
   },
-  comingSoonText: {
+  markerBadge: {
+    position: 'absolute',
+    top: SPACING.md,
+    right: SPACING.md,
+    backgroundColor: COLORS.secondary,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: 20,
+    elevation: 4,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  markerBadgeText: {
+    fontSize: TYPOGRAPHY.fontSize.xs,
+    fontWeight: 'bold',
+    color: COLORS.text.onSecondary,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.xl,
+    backgroundColor: COLORS.background,
+  },
+  loadingText: {
+    marginTop: SPACING.md,
     fontSize: TYPOGRAPHY.fontSize.md,
     color: COLORS.text.secondary,
-    textAlign: 'center',
-    fontStyle: 'italic',
+  },
+  errorText: {
+    fontSize: TYPOGRAPHY.fontSize.lg,
+    color: COLORS.text.secondary,
+    marginBottom: SPACING.lg,
+  },
+  backButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    borderRadius: 8,
+  },
+  backButtonText: {
+    color: COLORS.text.onPrimary,
+    fontSize: TYPOGRAPHY.fontSize.md,
+    fontWeight: '600',
   },
 });

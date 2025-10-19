@@ -7,10 +7,13 @@ import { MainTabParamList, RootStackParamList } from '../types';
 
 // Import user screens
 import { HomeScreen } from '../screens/user/HomeScreen';
-import { SearchScreen } from '../screens/user/SearchScreen';
-import { FavoritesScreen } from '../screens/user/FavoritesScreen';
+import { EnhancedSearchScreen } from '../screens/user/EnhancedSearchScreen';
 import { UserProfileScreen } from '../screens/user/UserProfileScreen';
-import { BusinessDetailScreen } from '../screens/user/BusinessDetailScreen';
+import { RestaurantDetailScreen } from '../screens/user/RestaurantDetailScreen';
+
+// Import business owner screens
+import { BusinessOwnerDashboard } from '../screens/owner/BusinessOwnerDashboard';
+// import { AddBusinessMarker } from '../screens/owner/AddBusinessMarker'; // Temporarily disabled - needs rebuild for geolocation
 
 // Import icons
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -31,12 +34,6 @@ const MainTabNavigator: React.FC = () => {
           switch (route.name) {
             case 'Home':
               iconName = focused ? 'home' : 'home-outline';
-              break;
-            case 'Search':
-              iconName = focused ? 'search' : 'search-outline';
-              break;
-            case 'Favorites':
-              iconName = focused ? 'heart' : 'heart-outline';
               break;
             case 'Profile':
               iconName = focused ? 'person' : 'person-outline';
@@ -71,20 +68,6 @@ const MainTabNavigator: React.FC = () => {
         }}
       />
       <Tab.Screen 
-        name="Search" 
-        component={SearchScreen}
-        options={{
-          tabBarLabel: 'Search',
-        }}
-      />
-      <Tab.Screen 
-        name="Favorites" 
-        component={FavoritesScreen}
-        options={{
-          tabBarLabel: 'Favorites',
-        }}
-      />
-      <Tab.Screen 
         name="Profile" 
         component={UserProfileScreen}
         options={{
@@ -109,18 +92,17 @@ export const MainNavigator: React.FC = () => {
         component={MainTabNavigator}
       />
       <Stack.Screen 
-        name="BusinessDetail" 
-        component={BusinessDetailScreen}
+        name="EnhancedSearch" 
+        component={EnhancedSearchScreen}
         options={{
-          headerShown: true,
-          title: 'Restaurant Details',
-          headerStyle: {
-            backgroundColor: COLORS.primary,
-          },
-          headerTintColor: COLORS.surface,
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="RestaurantDetail" 
+        component={RestaurantDetailScreen}
+        options={{
+          headerShown: false,
         }}
       />
       <Stack.Screen 
@@ -138,6 +120,23 @@ export const MainNavigator: React.FC = () => {
           },
         }}
       />
+      {/* Business Owner Screens */}
+      <Stack.Screen 
+        name="BusinessOwnerDashboard" 
+        component={BusinessOwnerDashboard}
+        options={{
+          headerShown: false,
+        }}
+      />
+      {/* Temporarily disabled - needs app rebuild for geolocation linking
+      <Stack.Screen 
+        name="AddBusinessMarker" 
+        component={AddBusinessMarker}
+        options={{
+          headerShown: false,
+        }}
+      />
+      */}
     </Stack.Navigator>
   );
 };

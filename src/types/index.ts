@@ -203,6 +203,15 @@ export type RootStackParamList = {
   BusinessProfile: undefined;
   AddRestaurant: undefined;
   AdminDashboard: undefined;
+  // User screens
+  EnhancedSearch: { category?: string };
+  RestaurantDetail: { restaurantId: string };
+  // Business owner screens
+  BusinessOwnerDashboard: undefined;
+  AddBusinessMarker: { businessId: string };
+  CreateBusiness: undefined;
+  EditBusiness: { businessId: string };
+  EditOwnerProfile: undefined;
 };
 
 export type AuthStackParamList = {

@@ -142,30 +142,57 @@ export const USER_ROLES = {
   ADMIN: 'admin',
 } as const;
 
-// Theme Colors
+// Theme Colors - Green, Orange, Purple Palette
 export const COLORS = {
-  primary: '#FF6B35',
-  primaryDark: '#E55A2B',
-  primaryLight: '#FF8A65',
-  secondary: '#2E7D32',
-  secondaryDark: '#1B5E20',
-  secondaryLight: '#4CAF50',
-  accent: '#FFC107',
-  background: '#FAFAFA',
+  // Primary - Vibrant Orange
+  primary: '#FF8C42',
+  primaryDark: '#E67A2E',
+  primaryLight: '#FFB574',
+  
+  // Secondary - Fresh Green
+  secondary: '#4CAF50',
+  secondaryDark: '#388E3C',
+  secondaryLight: '#81C784',
+  
+  // Accent - Purple
+  accent: '#9C27B0',
+  accentDark: '#7B1FA2',
+  accentLight: '#BA68C8',
+  
+  // Backgrounds
+  background: '#F8F9FA',
   surface: '#FFFFFF',
+  surfaceVariant: '#F5F5F5',
+  
+  // Status Colors
   error: '#F44336',
   warning: '#FF9800',
   success: '#4CAF50',
   info: '#2196F3',
+  
+  // Text Colors
   text: {
     primary: '#212121',
     secondary: '#757575',
     disabled: '#BDBDBD',
     hint: '#9E9E9E',
+    onPrimary: '#FFFFFF',
+    onSecondary: '#FFFFFF',
+    onAccent: '#FFFFFF',
   },
+  
+  // UI Elements
   border: '#E0E0E0',
   divider: '#E0E0E0',
   shadow: 'rgba(0, 0, 0, 0.1)',
+  overlay: 'rgba(0, 0, 0, 0.5)',
+  
+  // Gradient Colors
+  gradient: {
+    start: '#FF8C42',
+    middle: '#9C27B0',
+    end: '#4CAF50',
+  },
 } as const;
 
 // Typography

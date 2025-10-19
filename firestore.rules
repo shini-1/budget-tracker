@@ -1,36 +1,105 @@
-// firestore.rules
+// Firestore Security Rules for FoodVenturer
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow authenticated users to read and write their own data
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user owns the business
+    function isBusinessOwner(businessId) {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/businesses/$(businessId)).data.ownerId == request.auth.uid;
+    }
+    
+    // Users Collection
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Users can read their own data
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      
+      // Users can update their own data
+      allow update: if isAuthenticated() && request.auth.uid == userId;
+      
+      // Only allow creation during signup
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      
+      // Prevent deletion (or implement admin check)
+      allow delete: if false;
     }
 
-    // Allow authenticated users to read and write businesses
+    // Businesses Collection
     match /businesses/{businessId} {
-      allow read, write: if request.auth != null;
+      // Anyone can read active businesses
+      allow read: if resource.data.isActive == true;
+      
+      // Authenticated users can create businesses
+      allow create: if isAuthenticated() &&
+                       request.resource.data.ownerId == request.auth.uid;
+      
+      // Only owner can update their business
+      allow update: if isBusinessOwner(businessId);
+      
+      // Only owner can delete their business
+      allow delete: if isBusinessOwner(businessId);
+    }
+    
+    // Business Markers Collection
+    match /businessMarkers/{markerId} {
+      // Anyone can read markers (for map display)
+      allow read: if true;
+      
+      // Only business owner can create/update markers
+      allow create, update: if isAuthenticated() &&
+                               exists(/databases/$(database)/documents/businesses/$(markerId)) &&
+                               get(/databases/$(database)/documents/businesses/$(markerId)).data.ownerId == request.auth.uid;
+      
+      // Only business owner can delete markers
+      allow delete: if isAuthenticated() &&
+                       exists(/databases/$(database)/documents/businesses/$(markerId)) &&
+                       get(/databases/$(database)/documents/businesses/$(markerId)).data.ownerId == request.auth.uid;
     }
 
-    // Allow authenticated users to read and write reviews
+    // Reviews Collection
     match /reviews/{reviewId} {
-      allow read, write: if request.auth != null;
+      // Anyone can read reviews
+      allow read: if true;
+      
+      // Authenticated users can create reviews
+      allow create: if isAuthenticated() &&
+                       request.resource.data.userId == request.auth.uid;
+      
+      // Only review author can update/delete
+      allow update, delete: if isAuthenticated() &&
+                               resource.data.userId == request.auth.uid;
     }
 
-    // Allow authenticated users to read and write favorites
+    // Favorites Collection
     match /favorites/{favoriteId} {
-      allow read, write: if request.auth != null;
+      // Users can read their own favorites
+      allow read: if isAuthenticated() &&
+                     resource.data.userId == request.auth.uid;
+      
+      // Users can create their own favorites
+      allow create: if isAuthenticated() &&
+                       request.resource.data.userId == request.auth.uid;
+      
+      // Users can delete their own favorites
+      allow delete: if isAuthenticated() &&
+                       resource.data.userId == request.auth.uid;
     }
 
-    // Allow reading categories for all authenticated users
+    // Categories Collection (Read-only for users, admin-only write)
     match /categories/{categoryId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
+      allow read: if true;
+      allow write: if false; // Only admins can modify categories
     }
 
-    // Allow reading analytics for authenticated users
+    // Analytics Collection (Read-only for business owners)
     match /analytics/{analyticId} {
-      allow read: if request.auth != null;
+      allow read: if isAuthenticated();
+      allow write: if false; // Analytics are system-generated
     }
   }
 }

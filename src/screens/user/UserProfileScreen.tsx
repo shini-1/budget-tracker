@@ -1,9 +1,11 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../hooks/useAuth';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../constants';
 
 export const UserProfileScreen: React.FC = () => {
+  const navigation = useNavigation();
   const { user, logout, isLoading } = useAuth();
 
   const handleLogout = () => {
@@ -45,6 +47,20 @@ export const UserProfileScreen: React.FC = () => {
           </Text>
         </View>
       </View>
+
+      {/* Business Owner Dashboard Button - Only show for business owners */}
+      {user?.role === 'business_owner' && (
+        <TouchableOpacity
+          style={styles.dashboardButton}
+          onPress={() => {
+            // @ts-ignore
+            navigation.navigate('BusinessOwnerDashboard');
+          }}
+        >
+          <Text style={styles.dashboardButtonIcon}>🏪</Text>
+          <Text style={styles.dashboardButtonText}>Business Dashboard</Text>
+        </TouchableOpacity>
+      )}
 
       <TouchableOpacity
         style={[styles.logoutButton, isLoading && styles.logoutButtonDisabled]}
@@ -116,6 +132,29 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.fontSize.md,
     fontWeight: '600',
     color: COLORS.primary,
+  },
+  dashboardButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    padding: SPACING.md,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: SPACING.md,
+    elevation: 4,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  dashboardButtonIcon: {
+    fontSize: 24,
+    marginRight: SPACING.sm,
+  },
+  dashboardButtonText: {
+    color: COLORS.text.onPrimary,
+    fontSize: TYPOGRAPHY.fontSize.lg,
+    fontWeight: '600',
   },
   logoutButton: {
     backgroundColor: COLORS.error,
