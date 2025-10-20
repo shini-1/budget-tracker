@@ -1,6 +1,6 @@
 // App Constants and Configuration
 
-import { GOOGLE_MAPS_API_KEY } from '@env';
+// import { GOOGLE_MAPS_API_KEY } from '@env';
 
 // API Configuration
 export const API_CONFIG = {
@@ -49,7 +49,7 @@ export const API_CONFIG = {
 
 // Google Maps Configuration
 export const MAPS_CONFIG = {
-  API_KEY: GOOGLE_MAPS_API_KEY || '',
+  API_KEY: 'AIzaSyBWrQXD0awUasgpv83M4jBEa19p3DR__6Y',
   DEFAULT_ZOOM: 15,
   DEFAULT_CENTER: {
     latitude: 37.7749,
@@ -142,57 +142,69 @@ export const USER_ROLES = {
   ADMIN: 'admin',
 } as const;
 
-// Theme Colors - Green, Orange, Purple Palette
+// Theme Colors - Khaki Background with Green/Purple Gradients and Pastel Elements
 export const COLORS = {
-  // Primary - Vibrant Orange
-  primary: '#FF8C42',
-  primaryDark: '#E67A2E',
-  primaryLight: '#FFB574',
+  // Primary - Purple
+  primary: '#8B5CF6',
+  primaryDark: '#7C3AED',
+  primaryLight: '#A78BFA',
   
-  // Secondary - Fresh Green
-  secondary: '#4CAF50',
-  secondaryDark: '#388E3C',
-  secondaryLight: '#81C784',
+  // Secondary - Green
+  secondary: '#10B981',
+  secondaryDark: '#059669',
+  secondaryLight: '#34D399',
   
-  // Accent - Purple
-  accent: '#9C27B0',
-  accentDark: '#7B1FA2',
-  accentLight: '#BA68C8',
+  // Accent - Soft Pink
+  accent: '#F9A8D4',
+  accentDark: '#F8B4CC',
+  accentLight: '#FBCFE8',
   
   // Backgrounds
-  background: '#F8F9FA',
-  surface: '#FFFFFF',
-  surfaceVariant: '#F5F5F5',
+  background: '#F5DEB3', // Khaki
+  surface: '#FFF8E1', // Light Khaki
+  surfaceVariant: '#FFE4B5', // Moccasin
   
-  // Status Colors
-  error: '#F44336',
-  warning: '#FF9800',
-  success: '#4CAF50',
-  info: '#2196F3',
+  // Pastel Colors for UI Elements
+  pastel: {
+    pink: '#FFD1DC',
+    blue: '#B5D8E7',
+    green: '#C1E1C1',
+    yellow: '#FFEDA0',
+    purple: '#E0D4F7',
+    peach: '#FFE4C4',
+    lavender: '#E6E6FA',
+    mint: '#B5E7D1',
+  },
+  
+  // Gradient Colors (Green to Purple)
+  gradient: {
+    start: '#10B981',    // Green
+    middle: '#8B5CF6',   // Purple
+    end: '#EC4899',      // Pink
+  },
+  
+  // Status Colors (Pastel versions)
+  error: '#FF6B6B',
+  success: '#51CF66',
+  warning: '#FFD93D',
+  info: '#74C0FC',
   
   // Text Colors
   text: {
-    primary: '#212121',
-    secondary: '#757575',
-    disabled: '#BDBDBD',
-    hint: '#9E9E9E',
+    primary: '#2D3748',
+    secondary: '#718096',
+    disabled: '#CBD5E0',
+    hint: '#A0AEC0',
     onPrimary: '#FFFFFF',
     onSecondary: '#FFFFFF',
     onAccent: '#FFFFFF',
   },
   
   // UI Elements
-  border: '#E0E0E0',
-  divider: '#E0E0E0',
+  border: '#E2D5B8',
+  divider: '#E2D5B8',
   shadow: 'rgba(0, 0, 0, 0.1)',
   overlay: 'rgba(0, 0, 0, 0.5)',
-  
-  // Gradient Colors
-  gradient: {
-    start: '#FF8C42',
-    middle: '#9C27B0',
-    end: '#4CAF50',
-  },
 } as const;
 
 // Typography

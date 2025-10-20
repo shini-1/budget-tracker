@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../constants';
+import { seedTestData } from '../../utils/seedTestData';
 
 type SelectedRole = 'user' | 'business_owner' | 'admin' | null;
 
@@ -146,7 +147,29 @@ export const RoleSelectionScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Action Modal */}
+      {/* Development: Seed Test Data Button */}
+      {__DEV__ && (
+        <TouchableOpacity
+          style={styles.seedButton}
+          onPress={() => {
+            Alert.alert(
+              'Seed Test Data',
+              'This will create test accounts:\n\n• owner@foodventurer.com\n• atiathan@foodventurer.com (with business)\n\nPassword: password123',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Create',
+                  onPress: () => seedTestData(),
+                },
+              ]
+            );
+          }}
+        >
+          <Text style={styles.seedButtonText}>🌱 Seed Test Data (Dev Only)</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Modal for Login/Signup Selection */}
       <Modal
         visible={showModal}
         transparent={true}
@@ -410,6 +433,19 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     color: COLORS.text.secondary,
+    fontSize: TYPOGRAPHY.fontSize.md,
+    fontWeight: '600',
+  },
+  seedButton: {
+    backgroundColor: COLORS.warning,
+    padding: SPACING.md,
+    borderRadius: 12,
+    marginTop: SPACING.lg,
+    marginHorizontal: SPACING.md,
+    alignItems: 'center',
+  },
+  seedButtonText: {
+    color: COLORS.surface,
     fontSize: TYPOGRAPHY.fontSize.md,
     fontWeight: '600',
   },

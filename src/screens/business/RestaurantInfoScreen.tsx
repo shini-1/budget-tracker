@@ -1,6 +1,6 @@
 // Restaurant Information Management Screen
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,22 +9,32 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../constants';
-import { BusinessCategory, PriceRange } from '../../types';
+import { BusinessCategory, PriceRange, Business, BusinessHours } from '../../types';
+import { firebaseBusinessService } from '../../services/firebaseBusinessService';
+import LinearGradient from 'react-native-linear-gradient';
 
 export const RestaurantInfoScreen: React.FC = () => {
-  const [restaurantName, setRestaurantName] = useState('My Restaurant');
-  const [description, setDescription] = useState('A wonderful dining experience');
+  const { user } = useSelector((state: RootState) => state.auth);
+  const [myBusiness, setMyBusiness] = useState<Business | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  const [restaurantName, setRestaurantName] = useState('');
+  const [description, setDescription] = useState('');
   const [category, setCategory] = useState<BusinessCategory>('restaurant');
   const [priceRange, setPriceRange] = useState<PriceRange>('$$');
-  const [phoneNumber, setPhoneNumber] = useState('+1 234 567 8900');
-  const [email, setEmail] = useState('contact@myrestaurant.com');
-  const [website, setWebsite] = useState('www.myrestaurant.com');
-  const [address, setAddress] = useState('123 Main Street');
-  const [city, setCity] = useState('San Francisco');
-  const [state, setState] = useState('CA');
-  const [postalCode, setPostalCode] = useState('94102');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [email, setEmail] = useState('');
+  const [website, setWebsite] = useState('');
+  const [address, setAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [postalCode, setPostalCode] = useState('');
 
   const categories: BusinessCategory[] = [
     'restaurant', 'cafe', 'fast_food', 'fine_dining', 'bar',
@@ -34,12 +44,111 @@ export const RestaurantInfoScreen: React.FC = () => {
 
   const priceRanges: PriceRange[] = ['$', '$$', '$$$', '$$$$'];
 
-  const handleSave = () => {
-    Alert.alert('Success', 'Restaurant information updated successfully!');
+  useEffect(() => {
+    loadMyBusiness();
+  }, [user]);
+
+  const loadMyBusiness = async () => {
+    try {
+      setIsLoading(true);
+      if (!user?.id) return;
+      
+      const businesses = await firebaseBusinessService.getUserBusinesses(user.id);
+      if (businesses.length > 0) {
+        const business = businesses[0];
+        setMyBusiness(business);
+        
+        // Populate form fields
+        setRestaurantName(business.name);
+        setDescription(business.description);
+        setCategory(business.category);
+        setPriceRange(business.priceRange);
+        setPhoneNumber(business.phoneNumber);
+        setEmail(business.email);
+        setWebsite(business.website || '');
+        setAddress(business.location.address || '');
+        setCity(business.location.city || '');
+        setState(business.location.state || '');
+        setPostalCode(business.location.postalCode || '');
+      }
+    } catch (error) {
+      console.error('Error loading business:', error);
+      Alert.alert('Error', 'Failed to load business information');
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const handleSave = async () => {
+    if (!myBusiness?.id) {
+      Alert.alert('Error', 'No business found to update');
+      return;
+    }
+
+    if (!restaurantName.trim()) {
+      Alert.alert('Error', 'Please enter restaurant name');
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const updates = {
+        name: restaurantName.trim(),
+        description: description.trim(),
+        category,
+        priceRange,
+        phoneNumber: phoneNumber.trim(),
+        email: email.trim(),
+        website: website.trim(),
+        location: {
+          ...myBusiness.location,
+          address: address.trim(),
+          city: city.trim(),
+          state: state.trim(),
+          postalCode: postalCode.trim(),
+        },
+      };
+
+      await firebaseBusinessService.updateBusiness(myBusiness.id, updates);
+      Alert.alert('Success', 'Restaurant information updated successfully!');
+      loadMyBusiness(); // Reload data
+    } catch (error: any) {
+      console.error('Error updating business:', error);
+      Alert.alert('Error', error.message || 'Failed to update restaurant information');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#9370DB" />
+        <Text style={styles.loadingText}>Loading restaurant info...</Text>
+      </View>
+    );
+  }
+
+  if (!myBusiness) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.noBusinessText}>No business found. Please create one first.</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>
+      <LinearGradient
+        colors={['#9370DB', '#98FB98']} // Purple to Green gradient
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.headerGradient}
+      >
+        <Text style={styles.headerTitle}>🏪 Restaurant Information</Text>
+        <Text style={styles.headerSubtitle}>Update your business details</Text>
+      </LinearGradient>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Basic Information</Text>
         
@@ -178,8 +287,14 @@ export const RestaurantInfoScreen: React.FC = () => {
         </View>
       </View>
 
-      <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-        <Text style={styles.saveButtonText}>Save Changes</Text>
+      <TouchableOpacity 
+        style={[styles.saveButton, isSaving && styles.saveButtonDisabled]} 
+        onPress={handleSave}
+        disabled={isSaving}
+      >
+        <Text style={styles.saveButtonText}>
+          {isSaving ? 'Saving...' : 'Save Changes'}
+        </Text>
       </TouchableOpacity>
 
       <View style={styles.footer}>
@@ -192,17 +307,50 @@ export const RestaurantInfoScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#F0E68C', // Khaki background
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F0E68C',
+  },
+  loadingText: {
+    marginTop: SPACING.md,
+    fontSize: TYPOGRAPHY.fontSize.md,
+    color: COLORS.text.secondary,
+  },
+  noBusinessText: {
+    fontSize: TYPOGRAPHY.fontSize.md,
+    color: COLORS.text.secondary,
+    textAlign: 'center',
+  },
+  headerGradient: {
+    padding: SPACING.xl,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+  },
+  headerTitle: {
+    fontSize: TYPOGRAPHY.fontSize.xxl,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: SPACING.xs,
+  },
+  headerSubtitle: {
+    fontSize: TYPOGRAPHY.fontSize.md,
+    color: '#FFFFFF',
+    textAlign: 'center',
   },
   section: {
     padding: SPACING.md,
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#E6E6FA', // Pastel lavender
     marginBottom: SPACING.sm,
   },
   sectionTitle: {
     fontSize: TYPOGRAPHY.fontSize.lg,
     fontWeight: '600',
-    color: COLORS.text.primary,
+    color: '#6A5ACD', // Slate blue
     marginBottom: SPACING.md,
   },
   label: {
@@ -213,9 +361,9 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
   },
   input: {
-    backgroundColor: COLORS.background,
+    backgroundColor: '#FFFACD', // Pastel lemon chiffon
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#DDA0DD', // Pastel plum
     borderRadius: 8,
     padding: SPACING.md,
     fontSize: TYPOGRAPHY.fontSize.md,
@@ -233,14 +381,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     borderRadius: 20,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#FFFACD', // Pastel lemon chiffon
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#DDA0DD', // Pastel plum
     marginRight: SPACING.sm,
   },
   chipSelected: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
+    backgroundColor: '#98FB98', // Pastel green
+    borderColor: '#98FB98',
   },
   chipText: {
     fontSize: TYPOGRAPHY.fontSize.sm,
@@ -260,9 +408,9 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: SPACING.md,
     borderRadius: 8,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#FFFACD', // Pastel lemon chiffon
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#DDA0DD', // Pastel plum
     alignItems: 'center',
   },
   row: {
@@ -275,14 +423,17 @@ const styles = StyleSheet.create({
   saveButton: {
     margin: SPACING.md,
     padding: SPACING.md,
-    backgroundColor: COLORS.primary,
+    backgroundColor: '#98FB98', // Pastel green
     borderRadius: 8,
     alignItems: 'center',
+  },
+  saveButtonDisabled: {
+    backgroundColor: COLORS.text.disabled,
   },
   saveButtonText: {
     fontSize: TYPOGRAPHY.fontSize.md,
     fontWeight: '600',
-    color: COLORS.surface,
+    color: '#FFFFFF',
   },
   footer: {
     alignItems: 'center',
@@ -290,7 +441,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: TYPOGRAPHY.fontSize.sm,
-    color: COLORS.primary,
+    color: '#9370DB', // Medium purple
     fontWeight: '600',
   },
 });

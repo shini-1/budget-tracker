@@ -85,6 +85,21 @@ class AuthService {
       return mockAuthService.register(userData);
     }
 
+    if (this.useFirebase) {
+      const user = await firebaseAuthService.register(userData);
+      const token = await firebaseAuthService.getIdToken();
+      
+      if (!token) {
+        throw new Error('Failed to get authentication token');
+      }
+
+      return {
+        user,
+        token,
+        refreshToken: token, // Firebase handles refresh automatically
+      };
+    }
+
     const response = await apiClient.post<ApiResponse<AuthResponse>>(
       API_CONFIG.ENDPOINTS.AUTH.REGISTER,
       userData

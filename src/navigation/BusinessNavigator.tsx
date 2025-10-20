@@ -149,6 +149,21 @@ export const BusinessNavigator: React.FC = () => {
           },
         }}
       />
+      <Stack.Screen 
+        name="CreateBusiness" 
+        component={AddRestaurantScreen}
+        options={{
+          headerShown: true,
+          title: 'Create Business',
+          headerStyle: {
+            backgroundColor: COLORS.secondary,
+          },
+          headerTintColor: COLORS.surface,
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+        }}
+      />
     </Stack.Navigator>
   );
 };

@@ -1,12 +1,11 @@
 // Firebase Configuration
 
-import { getAuth } from '@react-native-firebase/auth';
-import { getFirestore, serverTimestamp, writeBatch, runTransaction } from '@react-native-firebase/firestore';
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 
-// Initialize Firebase services using v22 modular API
+// Initialize Firebase services
 // React Native Firebase automatically initializes the app
-export const auth = getAuth();
-export const firestore = getFirestore();
+export { auth, firestore };
 
 // Debug logging
 console.log('🔍 Firebase Configuration Check:');
@@ -17,15 +16,11 @@ console.log('API Key from google-services.json:', 'AIzaSyAUH7AIvFDuBO-_hI8VFqZsB
 console.log('Firebase initialized:', {
   auth: !!auth,
   firestore: !!firestore,
-  authApp: auth.app?.name,
-  firestoreApp: firestore.app?.name,
-  authProjectId: auth.app?.options?.projectId,
-  firestoreProjectId: firestore.app?.options?.projectId,
 });
 
 // Test Firebase connectivity
 console.log('🔍 Testing Firebase connectivity...');
-auth.onAuthStateChanged((user) => {
+auth().onAuthStateChanged((user) => {
   console.log('Auth state changed:', user ? 'User logged in' : 'No user');
 });
 
@@ -52,6 +47,7 @@ export const COLLECTIONS = {
   FAVORITES: 'favorites',
   CATEGORIES: 'categories',
   ANALYTICS: 'analytics',
+  MENUS: 'menus',
 } as const;
 
 // Firebase error codes
@@ -88,11 +84,11 @@ export const getFirebaseErrorMessage = (errorCode: string): string => {
 };
 
 // Firebase timestamp helper
-export const getFirebaseTimestamp = () => serverTimestamp();
+export const getFirebaseTimestamp = () => firestore.FieldValue.serverTimestamp();
 
 // Batch operations helper
-export const createBatch = () => writeBatch(firestore);
+export const createBatch = () => firestore().batch();
 
 // Transaction helper
 export const runTransactionHelper = (updateFunction: (transaction: any) => Promise<any>) =>
-  runTransaction(firestore, updateFunction);
+  firestore().runTransaction(updateFunction);

@@ -6,8 +6,8 @@ import { firebaseBusinessService } from './firebaseBusinessService';
 import { googlePlacesService } from './googlePlacesService';
 
 class BusinessService {
-  private useGooglePlaces = true; // Primary data source for real restaurants
-  private useFirebase = true; // For user-generated content
+  private useGooglePlaces = false; // Disabled to avoid Google Maps API billing errors
+  private useFirebase = true; // Primary data source - all businesses stored in Firestore
   private useMockService = false; // Fallback only - disabled in production
 
   async getBusinesses(params: { page?: number; limit?: number } = {}): Promise<PaginatedResponse<Business>> {
@@ -82,18 +82,19 @@ class BusinessService {
     throw new Error('Business not found');
   }
 
-  async createBusiness(businessData: BusinessForm): Promise<Business> {
+  async createBusiness(businessData: BusinessForm, ownerId: string): Promise<Business> {
     // Always store user-generated businesses in Firebase
     if (this.useFirebase) {
-      return await firebaseBusinessService.createBusiness(businessData);
+      return await firebaseBusinessService.createBusiness(businessData, ownerId);
     }
 
     throw new Error('Business creation not available');
   }
 
-  async updateBusiness(id: string, data: Partial<BusinessForm>): Promise<Business> {
+  async updateBusiness(id: string, data: Partial<BusinessForm>): Promise<void> {
     if (this.useFirebase) {
-      return await firebaseBusinessService.updateBusiness(id, data);
+      await firebaseBusinessService.updateBusiness(id, data);
+      return;
     }
 
     throw new Error('Business update not available');
@@ -109,8 +110,7 @@ class BusinessService {
 
   async getUserBusinesses(userId: string): Promise<Business[]> {
     if (this.useFirebase) {
-      const response = await firebaseBusinessService.getBusinesses({});
-      return response.data.filter(business => business.ownerId === userId);
+      return await firebaseBusinessService.getUserBusinesses(userId);
     }
 
     return [];

@@ -16,7 +16,8 @@ import { useNavigation } from '@react-navigation/native';
 import { RootState } from '../../store';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../constants';
 import { Business } from '../../types';
-import { mockBusinessService } from '../../services/mockBusinessService';
+import { firebaseBusinessService } from '../../services/firebaseBusinessService';
+import LinearGradient from 'react-native-linear-gradient';
 
 const { width } = Dimensions.get('window');
 
@@ -75,10 +76,11 @@ export const BusinessDashboardScreen: React.FC = () => {
   const loadMyBusiness = async () => {
     try {
       setIsLoadingBusiness(true);
-      // Find business owned by current user
-      const businesses = await mockBusinessService.getBusinesses({ limit: 100 });
-      const userBusiness = businesses.data.find(b => b.ownerId === user?.id);
-      setMyBusiness(userBusiness || null);
+      if (!user?.id) return;
+      
+      // Get user's businesses from Firebase
+      const businesses = await firebaseBusinessService.getUserBusinesses(user.id);
+      setMyBusiness(businesses.length > 0 ? businesses[0] : null);
     } catch (error) {
       console.error('Error loading business:', error);
     } finally {
@@ -119,7 +121,12 @@ export const BusinessDashboardScreen: React.FC = () => {
   return (
     <ScrollView style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <LinearGradient
+        colors={['#9370DB', '#98FB98']} // Purple to Green gradient
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.header}
+      >
         <View>
           <Text style={styles.greeting}>Welcome back,</Text>
           <Text style={styles.businessName}>
@@ -132,7 +139,7 @@ export const BusinessDashboardScreen: React.FC = () => {
             <Text style={styles.notificationBadgeText}>3</Text>
           </View>
         </TouchableOpacity>
-      </View>
+      </LinearGradient>
 
       {/* Period Selector */}
       <View style={styles.periodSelector}>
@@ -309,25 +316,24 @@ export const BusinessDashboardScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#F0E68C', // Khaki background
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: SPACING.md,
-    backgroundColor: COLORS.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
   greeting: {
     fontSize: TYPOGRAPHY.fontSize.sm,
-    color: COLORS.text.secondary,
+    color: '#FFFFFF',
   },
   businessName: {
     fontSize: TYPOGRAPHY.fontSize.xl,
     fontWeight: 'bold',
-    color: COLORS.text.primary,
+    color: '#FFFFFF',
     marginTop: SPACING.xs,
   },
   notificationButton: {
@@ -362,14 +368,14 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.md,
     borderRadius: 8,
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#E6E6FA', // Pastel lavender
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#DDA0DD', // Pastel plum
     alignItems: 'center',
   },
   periodButtonActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
+    backgroundColor: '#98FB98', // Pastel green
+    borderColor: '#98FB98',
   },
   periodButtonText: {
     fontSize: TYPOGRAPHY.fontSize.sm,
@@ -377,7 +383,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   periodButtonTextActive: {
-    color: COLORS.surface,
+    color: '#FFFFFF',
     fontWeight: '600',
   },
   statsGrid: {
@@ -388,7 +394,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     width: (width - SPACING.md * 3) / 2,
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#E6E6FA', // Pastel lavender
     borderRadius: 12,
     padding: SPACING.md,
     shadowColor: '#000',
@@ -467,12 +473,12 @@ const styles = StyleSheet.create({
     color: COLORS.surface,
   },
   reviewCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#E6E6FA', // Pastel lavender
     borderRadius: 12,
     padding: SPACING.md,
     marginBottom: SPACING.sm,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#DDA0DD', // Pastel plum
   },
   reviewHeader: {
     flexDirection: 'row',
@@ -503,12 +509,12 @@ const styles = StyleSheet.create({
   },
   insightCard: {
     flexDirection: 'row',
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#E6E6FA', // Pastel lavender
     borderRadius: 12,
     padding: SPACING.md,
     marginBottom: SPACING.sm,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#DDA0DD', // Pastel plum
   },
   insightIcon: {
     fontSize: 32,
@@ -534,7 +540,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: TYPOGRAPHY.fontSize.sm,
-    color: COLORS.primary,
+    color: '#9370DB', // Medium purple
     fontWeight: '600',
   },
 });

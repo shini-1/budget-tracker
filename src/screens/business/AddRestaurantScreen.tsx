@@ -9,14 +9,19 @@ import {
   TextInput,
   Alert,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigation } from '@react-navigation/native';
 import { RootState } from '../../store';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../constants';
 import { useLocation } from '../../hooks/useLocation';
-import { Business, Location } from '../../types';
+import { Business, Location, BusinessHours } from '../../types';
+import { firebaseBusinessService } from '../../services/firebaseBusinessService';
+import LinearGradient from 'react-native-linear-gradient';
 
 export const AddRestaurantScreen: React.FC = () => {
+  const navigation = useNavigation();
   const { user } = useSelector((state: RootState) => state.auth);
   const { location: currentLocation, isLoading: locationLoading, error: locationError, getCurrentLocation } = useLocation();
 
@@ -36,13 +41,26 @@ export const AddRestaurantScreen: React.FC = () => {
 
   const handleGetCurrentLocation = async () => {
     try {
-      const location = await getCurrentLocation();
+      console.log('Getting current location...');
+      const location = await getCurrentLocation(true); // Use fallback
+      console.log('Location received:', location);
+      
       if (location) {
         setSelectedLocation(location);
         Alert.alert('Success', `Location set to: ${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`);
+      } else {
+        Alert.alert('Error', 'Could not get location. Please try again.');
       }
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to get location');
+      console.error('Location error:', error);
+      // Don't crash - show user-friendly error
+      Alert.alert(
+        'Location Error',
+        error?.message || 'Failed to get location. Please check your location permissions and try again.',
+        [
+          { text: 'OK', style: 'default' }
+        ]
+      );
     }
   };
 
@@ -67,34 +85,49 @@ export const AddRestaurantScreen: React.FC = () => {
       return;
     }
 
+    if (!user?.id) {
+      Alert.alert('Error', 'You must be logged in to add a restaurant');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      const restaurantData = {
+      // Create default business hours
+      const defaultHours: BusinessHours = {
+        monday: { isOpen: true, openTime: '09:00', closeTime: '21:00' },
+        tuesday: { isOpen: true, openTime: '09:00', closeTime: '21:00' },
+        wednesday: { isOpen: true, openTime: '09:00', closeTime: '21:00' },
+        thursday: { isOpen: true, openTime: '09:00', closeTime: '21:00' },
+        friday: { isOpen: true, openTime: '09:00', closeTime: '22:00' },
+        saturday: { isOpen: true, openTime: '09:00', closeTime: '22:00' },
+        sunday: { isOpen: true, openTime: '10:00', closeTime: '20:00' },
+      };
+
+      const businessFormData = {
         name: restaurantName.trim(),
-        description: description.trim(),
+        description: description.trim() || 'A wonderful dining experience',
         phoneNumber: phoneNumber.trim(),
         email: email.trim(),
         location: selectedLocation,
         category: 'restaurant' as const,
-        rating: 0,
-        reviewCount: 0,
-        priceRange: '$$' as const,
-        images: [],
+        hours: defaultHours,
         amenities: [],
-        isVerified: false,
-        isActive: true,
-        ownerId: user?.id || 'unknown',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
       };
 
-      // TODO: Implement API call to save restaurant
-      console.log('Restaurant data to save:', restaurantData);
+      console.log('Creating business with data:', businessFormData);
+
+      // Save to Firebase
+      const newBusiness = await firebaseBusinessService.createBusiness(
+        businessFormData,
+        user.id
+      );
+
+      console.log('Business created successfully:', newBusiness);
 
       Alert.alert(
         'Success!',
-        'Your restaurant location has been added! It will be reviewed and approved soon.',
+        'Your restaurant has been added successfully! It will be reviewed and approved soon.',
         [
           {
             text: 'OK',
@@ -104,12 +137,15 @@ export const AddRestaurantScreen: React.FC = () => {
               setDescription('');
               setPhoneNumber('');
               setSelectedLocation(null);
+              // Navigate back to dashboard
+              navigation.goBack();
             }
           }
         ]
       );
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to add restaurant');
+      console.error('Error creating business:', error);
+      Alert.alert('Error', error.message || 'Failed to add restaurant. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -117,12 +153,17 @@ export const AddRestaurantScreen: React.FC = () => {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      <View style={styles.header}>
+      <LinearGradient
+        colors={['#9370DB', '#98FB98']} // Purple to Green gradient
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.header}
+      >
         <Text style={styles.title}>🏪 Add Restaurant Location</Text>
         <Text style={styles.subtitle}>
           Add your restaurant to the Foodventurer map
         </Text>
-      </View>
+      </LinearGradient>
 
       <View style={styles.form}>
         {/* Restaurant Name */}
@@ -201,9 +242,13 @@ export const AddRestaurantScreen: React.FC = () => {
                 onPress={handleGetCurrentLocation}
                 disabled={locationLoading}
               >
-                <Text style={styles.locationButtonText}>
-                  📍 Use Current Location
-                </Text>
+                {locationLoading ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.locationButtonText}>
+                    📍 Use Current Location
+                  </Text>
+                )}
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -245,7 +290,7 @@ export const AddRestaurantScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#F0E68C', // Khaki background
   },
   scrollContent: {
     padding: SPACING.lg,
@@ -253,17 +298,20 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: SPACING.xl,
+    padding: SPACING.xl,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
   title: {
     fontSize: TYPOGRAPHY.fontSize.xxl,
     fontWeight: 'bold',
-    color: COLORS.primary,
+    color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: SPACING.sm,
   },
   subtitle: {
     fontSize: TYPOGRAPHY.fontSize.md,
-    color: COLORS.text.secondary,
+    color: '#FFFFFF',
     textAlign: 'center',
   },
   form: {
@@ -280,11 +328,11 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: COLORS.divider,
+    borderColor: '#DDA0DD', // Pastel plum border
     borderRadius: 8,
     padding: SPACING.md,
     fontSize: TYPOGRAPHY.fontSize.md,
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#FFFACD', // Pastel lemon chiffon
     color: COLORS.text.primary,
   },
   textArea: {
@@ -294,44 +342,44 @@ const styles = StyleSheet.create({
   locationSection: {
     marginBottom: SPACING.xl,
     padding: SPACING.lg,
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#E6E6FA', // Pastel lavender
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.divider,
+    borderColor: '#DDA0DD', // Pastel plum
   },
   sectionTitle: {
     fontSize: TYPOGRAPHY.fontSize.lg,
     fontWeight: 'bold',
-    color: COLORS.primary,
+    color: '#6A5ACD', // Slate blue
     marginBottom: SPACING.md,
   },
   locationButtons: {
     gap: SPACING.md,
   },
   locationButton: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: '#98FB98', // Pastel green
     padding: SPACING.md,
     borderRadius: 8,
     alignItems: 'center',
   },
   mapButton: {
-    backgroundColor: COLORS.secondary,
+    backgroundColor: '#DDA0DD', // Pastel plum
   },
   locationButtonText: {
-    color: COLORS.surface,
+    color: '#FFFFFF',
     fontSize: TYPOGRAPHY.fontSize.md,
     fontWeight: '600',
   },
   locationInfo: {
-    backgroundColor: COLORS.background,
+    backgroundColor: '#FFFACD', // Pastel lemon chiffon
     padding: SPACING.md,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: COLORS.success,
+    borderColor: '#98FB98', // Pastel green
   },
   locationText: {
     fontSize: TYPOGRAPHY.fontSize.md,
-    color: COLORS.success,
+    color: '#228B22', // Forest green
     fontWeight: '600',
     marginBottom: SPACING.sm,
   },
@@ -339,7 +387,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   changeLocationText: {
-    color: COLORS.primary,
+    color: '#9370DB', // Medium purple
     fontSize: TYPOGRAPHY.fontSize.sm,
     fontWeight: '600',
   },
@@ -349,7 +397,7 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
   },
   submitButton: {
-    backgroundColor: COLORS.success,
+    backgroundColor: '#98FB98', // Pastel green
     padding: SPACING.lg,
     borderRadius: 12,
     alignItems: 'center',
@@ -359,7 +407,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.text.disabled,
   },
   submitButtonText: {
-    color: COLORS.surface,
+    color: '#FFFFFF',
     fontSize: TYPOGRAPHY.fontSize.lg,
     fontWeight: 'bold',
   },

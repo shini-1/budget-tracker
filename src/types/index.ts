@@ -109,6 +109,7 @@ export interface Menu {
 
 export interface MenuItem {
   id: string;
+  businessId: string;
   name: string;
   description: string;
   price: number;

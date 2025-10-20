@@ -14,7 +14,8 @@ import { RootState } from '../../store';
 import { useAuth } from '../../hooks/useAuth';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../constants';
 import { Business } from '../../types';
-import { mockBusinessService } from '../../services/mockBusinessService';
+import { firebaseBusinessService } from '../../services/firebaseBusinessService';
+import LinearGradient from 'react-native-linear-gradient';
 
 export const BusinessSettingsScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -29,10 +30,11 @@ export const BusinessSettingsScreen: React.FC = () => {
   const loadMyBusiness = async () => {
     try {
       setIsLoading(true);
-      // Find business owned by current user
-      const businesses = await mockBusinessService.getBusinesses({ limit: 100 });
-      const userBusiness = businesses.data.find(b => b.ownerId === user?.id);
-      setMyBusiness(userBusiness || null);
+      if (!user?.id) return;
+      
+      // Get user's businesses from Firebase
+      const businesses = await firebaseBusinessService.getUserBusinesses(user.id);
+      setMyBusiness(businesses.length > 0 ? businesses[0] : null);
     } catch (error) {
       console.error('Error loading business:', error);
     } finally {
@@ -103,9 +105,14 @@ export const BusinessSettingsScreen: React.FC = () => {
   return (
     <ScrollView style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <LinearGradient
+        colors={['#9370DB', '#98FB98']} // Purple to Green gradient
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.header}
+      >
         <Text style={styles.headerTitle}>Profile</Text>
-      </View>
+      </LinearGradient>
 
       {/* Owner Profile Card */}
       <View style={styles.profileCard}>
@@ -245,13 +252,13 @@ export const BusinessSettingsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#F0E68C', // Khaki background
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
+    backgroundColor: '#F0E68C',
   },
   loadingText: {
     marginTop: SPACING.md,
@@ -259,7 +266,6 @@ const styles = StyleSheet.create({
     color: COLORS.text.secondary,
   },
   header: {
-    backgroundColor: COLORS.primary,
     paddingHorizontal: SPACING.lg,
     paddingTop: SPACING.xl,
     paddingBottom: SPACING.lg,
@@ -269,10 +275,10 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: TYPOGRAPHY.fontSize.xxl,
     fontWeight: 'bold',
-    color: COLORS.text.onPrimary,
+    color: '#FFFFFF',
   },
   profileCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#E6E6FA', // Pastel lavender
     marginHorizontal: SPACING.lg,
     marginTop: SPACING.lg,
     padding: SPACING.lg,
@@ -288,7 +294,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: COLORS.primary,
+    backgroundColor: '#9370DB', // Medium purple
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: SPACING.md,
@@ -296,7 +302,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: COLORS.text.onPrimary,
+    color: '#FFFFFF',
   },
   name: {
     fontSize: TYPOGRAPHY.fontSize.xl,
@@ -312,7 +318,7 @@ const styles = StyleSheet.create({
   roleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.secondary,
+    backgroundColor: '#DDA0DD', // Pastel plum
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.xs,
     borderRadius: 12,
@@ -320,16 +326,16 @@ const styles = StyleSheet.create({
   },
   roleLabel: {
     fontSize: TYPOGRAPHY.fontSize.sm,
-    color: COLORS.text.onSecondary,
+    color: '#FFFFFF',
     marginRight: SPACING.xs,
   },
   roleValue: {
     fontSize: TYPOGRAPHY.fontSize.sm,
     fontWeight: '600',
-    color: COLORS.text.onSecondary,
+    color: '#FFFFFF',
   },
   editProfileButton: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: '#98FB98', // Pastel green
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm,
     borderRadius: 8,
@@ -338,7 +344,7 @@ const styles = StyleSheet.create({
   editProfileButtonText: {
     fontSize: TYPOGRAPHY.fontSize.md,
     fontWeight: '600',
-    color: COLORS.text.onPrimary,
+    color: '#FFFFFF',
   },
   section: {
     marginTop: SPACING.lg,
@@ -351,7 +357,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   businessCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#E6E6FA', // Pastel lavender
     padding: SPACING.lg,
     borderRadius: 12,
     elevation: 2,
@@ -379,7 +385,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.text.disabled,
   },
   statusBadgeActive: {
-    backgroundColor: COLORS.success,
+    backgroundColor: '#98FB98', // Pastel green
   },
   statusText: {
     fontSize: TYPOGRAPHY.fontSize.xs,
@@ -407,7 +413,7 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: TYPOGRAPHY.fontSize.md,
     fontWeight: 'bold',
-    color: COLORS.primary,
+    color: '#9370DB', // Medium purple
     marginBottom: SPACING.xs,
   },
   statLabel: {
@@ -415,7 +421,7 @@ const styles = StyleSheet.create({
     color: COLORS.text.secondary,
   },
   editBusinessButton: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: '#98FB98', // Pastel green
     paddingVertical: SPACING.sm,
     borderRadius: 8,
     alignItems: 'center',
@@ -424,10 +430,10 @@ const styles = StyleSheet.create({
   editBusinessButtonText: {
     fontSize: TYPOGRAPHY.fontSize.md,
     fontWeight: '600',
-    color: COLORS.text.onPrimary,
+    color: '#FFFFFF',
   },
   addMarkerButton: {
-    backgroundColor: COLORS.secondary,
+    backgroundColor: '#DDA0DD', // Pastel plum
     paddingVertical: SPACING.sm,
     borderRadius: 8,
     alignItems: 'center',
@@ -435,10 +441,10 @@ const styles = StyleSheet.create({
   addMarkerButtonText: {
     fontSize: TYPOGRAPHY.fontSize.md,
     fontWeight: '600',
-    color: COLORS.text.onSecondary,
+    color: '#FFFFFF',
   },
   noBusinessCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#E6E6FA', // Pastel lavender
     padding: SPACING.xl,
     borderRadius: 12,
     alignItems: 'center',
@@ -458,7 +464,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   createBusinessButton: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: '#98FB98', // Pastel green
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm,
     borderRadius: 8,
@@ -466,12 +472,12 @@ const styles = StyleSheet.create({
   createBusinessButtonText: {
     fontSize: TYPOGRAPHY.fontSize.md,
     fontWeight: '600',
-    color: COLORS.text.onPrimary,
+    color: '#FFFFFF',
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#E6E6FA', // Pastel lavender
     padding: SPACING.md,
     borderRadius: 12,
     marginBottom: SPACING.sm,

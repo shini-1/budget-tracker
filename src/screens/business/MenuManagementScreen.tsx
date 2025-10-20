@@ -1,6 +1,6 @@
 // Menu Management Screen with CRUD operations
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,24 +10,21 @@ import {
   TextInput,
   Alert,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../constants';
-
-interface MenuItem {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  category: string;
-  isAvailable: boolean;
-}
+import { MenuItem } from '../../types';
+import { firebaseMenuService } from '../../services/firebaseMenuService';
+import { firebaseBusinessService } from '../../services/firebaseBusinessService';
+import LinearGradient from 'react-native-linear-gradient';
 
 export const MenuManagementScreen: React.FC = () => {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([
-    { id: '1', name: 'Caesar Salad', description: 'Fresh romaine lettuce with parmesan', price: 12.99, category: 'Appetizers', isAvailable: true },
-    { id: '2', name: 'Grilled Salmon', description: 'Atlantic salmon with vegetables', price: 24.99, category: 'Main Course', isAvailable: true },
-    { id: '3', name: 'Chocolate Cake', description: 'Rich chocolate cake with ice cream', price: 8.99, category: 'Desserts', isAvailable: true },
-  ]);
+  const { user } = useSelector((state: RootState) => state.auth);
+  const [businessId, setBusinessId] = useState<string | null>(null);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
@@ -41,35 +38,87 @@ export const MenuManagementScreen: React.FC = () => {
 
   const categories = ['Appetizers', 'Main Course', 'Desserts', 'Beverages', 'Sides'];
 
-  const handleAddItem = () => {
+  useEffect(() => {
+    loadBusinessAndMenu();
+  }, [user]);
+
+  const loadBusinessAndMenu = async () => {
+    try {
+      setIsLoading(true);
+      if (!user?.id) return;
+      
+      // Get user's business
+      const businesses = await firebaseBusinessService.getUserBusinesses(user.id);
+      if (businesses.length > 0) {
+        const business = businesses[0];
+        setBusinessId(business.id);
+        
+        // Load menu items
+        const items = await firebaseMenuService.getMenuItems(business.id);
+        setMenuItems(items);
+      }
+    } catch (error) {
+      console.error('Error loading menu:', error);
+      Alert.alert('Error', 'Failed to load menu items');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddItem = async () => {
     if (!newItem.name || !newItem.price) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
 
-    const item: MenuItem = {
-      id: Date.now().toString(),
-      name: newItem.name!,
-      description: newItem.description || '',
-      price: newItem.price!,
-      category: newItem.category || 'Main Course',
-      isAvailable: true,
-    };
+    if (!businessId) {
+      Alert.alert('Error', 'No business found');
+      return;
+    }
 
-    setMenuItems([...menuItems, item]);
-    setShowAddModal(false);
-    setNewItem({ name: '', description: '', price: 0, category: 'Main Course', isAvailable: true });
-    Alert.alert('Success', 'Menu item added successfully!');
+    try {
+      const menuItemData = {
+        businessId,
+        name: newItem.name!,
+        description: newItem.description || '',
+        price: newItem.price!,
+        category: newItem.category || 'Main Course',
+        images: [],
+        isAvailable: true,
+      };
+
+      const createdItem = await firebaseMenuService.createMenuItem(businessId, menuItemData);
+      setMenuItems([...menuItems, createdItem]);
+      setShowAddModal(false);
+      setNewItem({ name: '', description: '', price: 0, category: 'Main Course', isAvailable: true });
+      Alert.alert('Success', 'Menu item added successfully!');
+    } catch (error: any) {
+      console.error('Error adding menu item:', error);
+      Alert.alert('Error', error.message || 'Failed to add menu item');
+    }
   };
 
-  const handleEditItem = () => {
+  const handleEditItem = async () => {
     if (!editingItem) return;
 
-    setMenuItems(menuItems.map(item => 
-      item.id === editingItem.id ? editingItem : item
-    ));
-    setEditingItem(null);
-    Alert.alert('Success', 'Menu item updated successfully!');
+    try {
+      const updates = {
+        name: editingItem.name,
+        description: editingItem.description,
+        price: editingItem.price,
+        category: editingItem.category,
+      };
+
+      await firebaseMenuService.updateMenuItem(editingItem.id, updates);
+      setMenuItems(menuItems.map(item => 
+        item.id === editingItem.id ? editingItem : item
+      ));
+      setEditingItem(null);
+      Alert.alert('Success', 'Menu item updated successfully!');
+    } catch (error: any) {
+      console.error('Error updating menu item:', error);
+      Alert.alert('Error', error.message || 'Failed to update menu item');
+    }
   };
 
   const handleDeleteItem = (id: string) => {
@@ -81,19 +130,36 @@ export const MenuManagementScreen: React.FC = () => {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => {
-            setMenuItems(menuItems.filter(item => item.id !== id));
-            Alert.alert('Success', 'Menu item deleted successfully!');
+          onPress: async () => {
+            try {
+              await firebaseMenuService.deleteMenuItem(id);
+              setMenuItems(menuItems.filter(item => item.id !== id));
+              Alert.alert('Success', 'Menu item deleted successfully!');
+            } catch (error: any) {
+              console.error('Error deleting menu item:', error);
+              Alert.alert('Error', error.message || 'Failed to delete menu item');
+            }
           },
         },
       ]
     );
   };
 
-  const toggleAvailability = (id: string) => {
-    setMenuItems(menuItems.map(item =>
-      item.id === id ? { ...item, isAvailable: !item.isAvailable } : item
-    ));
+  const toggleAvailability = async (id: string) => {
+    try {
+      const item = menuItems.find(i => i.id === id);
+      if (!item) return;
+
+      const newAvailability = !item.isAvailable;
+      await firebaseMenuService.toggleAvailability(id, newAvailability);
+      
+      setMenuItems(menuItems.map(item =>
+        item.id === id ? { ...item, isAvailable: newAvailability } : item
+      ));
+    } catch (error: any) {
+      console.error('Error toggling availability:', error);
+      Alert.alert('Error', error.message || 'Failed to update availability');
+    }
   };
 
   const renderMenuItem = (item: MenuItem) => (
@@ -137,7 +203,6 @@ export const MenuManagementScreen: React.FC = () => {
 
   const renderModal = (isEdit: boolean) => {
     const item = isEdit ? editingItem : newItem;
-    const setItem = isEdit ? setEditingItem : setNewItem;
 
     return (
       <Modal
@@ -154,7 +219,13 @@ export const MenuManagementScreen: React.FC = () => {
             <TextInput
               style={styles.input}
               value={item?.name}
-              onChangeText={(text) => setItem({ ...item, name: text })}
+              onChangeText={(text) => {
+                if (isEdit && editingItem) {
+                  setEditingItem({ ...editingItem, name: text });
+                } else {
+                  setNewItem({ ...newItem, name: text });
+                }
+              }}
               placeholder="Enter item name"
               placeholderTextColor={COLORS.text.hint}
             />
@@ -163,7 +234,13 @@ export const MenuManagementScreen: React.FC = () => {
             <TextInput
               style={[styles.input, styles.textArea]}
               value={item?.description}
-              onChangeText={(text) => setItem({ ...item, description: text })}
+              onChangeText={(text) => {
+                if (isEdit && editingItem) {
+                  setEditingItem({ ...editingItem, description: text });
+                } else {
+                  setNewItem({ ...newItem, description: text });
+                }
+              }}
               placeholder="Enter description"
               placeholderTextColor={COLORS.text.hint}
               multiline
@@ -174,7 +251,14 @@ export const MenuManagementScreen: React.FC = () => {
             <TextInput
               style={styles.input}
               value={item?.price?.toString()}
-              onChangeText={(text) => setItem({ ...item, price: parseFloat(text) || 0 })}
+              onChangeText={(text) => {
+                const price = parseFloat(text) || 0;
+                if (isEdit && editingItem) {
+                  setEditingItem({ ...editingItem, price });
+                } else {
+                  setNewItem({ ...newItem, price });
+                }
+              }}
               placeholder="0.00"
               placeholderTextColor={COLORS.text.hint}
               keyboardType="decimal-pad"
@@ -186,7 +270,13 @@ export const MenuManagementScreen: React.FC = () => {
                 <TouchableOpacity
                   key={cat}
                   style={[styles.categoryChip, item?.category === cat && styles.categoryChipSelected]}
-                  onPress={() => setItem({ ...item, category: cat })}
+                  onPress={() => {
+                    if (isEdit && editingItem) {
+                      setEditingItem({ ...editingItem, category: cat });
+                    } else {
+                      setNewItem({ ...newItem, category: cat });
+                    }
+                  }}
                 >
                   <Text style={[styles.categoryChipText, item?.category === cat && styles.categoryChipTextSelected]}>
                     {cat}
@@ -220,9 +310,31 @@ export const MenuManagementScreen: React.FC = () => {
     return acc;
   }, {} as Record<string, MenuItem[]>);
 
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#9370DB" />
+        <Text style={styles.loadingText}>Loading menu...</Text>
+      </View>
+    );
+  }
+
+  if (!businessId) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.noBusinessText}>No business found. Please create one first.</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <LinearGradient
+        colors={['#9370DB', '#98FB98']} // Purple to Green gradient
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.header}
+      >
         <View>
           <Text style={styles.title}>Menu Management</Text>
           <Text style={styles.subtitle}>{menuItems.length} items</Text>
@@ -233,7 +345,7 @@ export const MenuManagementScreen: React.FC = () => {
         >
           <Text style={styles.addButtonText}>+ Add Item</Text>
         </TouchableOpacity>
-      </View>
+      </LinearGradient>
 
       <ScrollView style={styles.content}>
         {categories.map(category => {
@@ -270,21 +382,36 @@ export const MenuManagementScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#F0E68C', // Khaki background
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F0E68C',
+  },
+  loadingText: {
+    marginTop: SPACING.md,
+    fontSize: TYPOGRAPHY.fontSize.md,
+    color: COLORS.text.secondary,
+  },
+  noBusinessText: {
+    fontSize: TYPOGRAPHY.fontSize.md,
+    color: COLORS.text.secondary,
+    textAlign: 'center',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: SPACING.md,
-    backgroundColor: COLORS.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
   title: {
     fontSize: TYPOGRAPHY.fontSize.xl,
     fontWeight: 'bold',
-    color: COLORS.text.primary,
+    color: '#FFFFFF',
   },
   subtitle: {
     fontSize: TYPOGRAPHY.fontSize.sm,
@@ -292,13 +419,13 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xs,
   },
   addButton: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: '#FFFACD', // Pastel lemon chiffon
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     borderRadius: 8,
   },
   addButtonText: {
-    color: COLORS.surface,
+    color: '#6A5ACD', // Slate blue
     fontSize: TYPOGRAPHY.fontSize.md,
     fontWeight: '600',
   },
@@ -315,12 +442,12 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   menuCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#E6E6FA', // Pastel lavender
     borderRadius: 12,
     padding: SPACING.md,
     marginBottom: SPACING.md,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#DDA0DD', // Pastel plum
   },
   menuCardHeader: {
     flexDirection: 'row',
@@ -346,11 +473,11 @@ const styles = StyleSheet.create({
   menuItemPrice: {
     fontSize: TYPOGRAPHY.fontSize.lg,
     fontWeight: 'bold',
-    color: COLORS.primary,
+    color: '#9370DB', // Medium purple
     marginBottom: SPACING.xs,
   },
   availabilityBadge: {
-    backgroundColor: COLORS.success,
+    backgroundColor: '#98FB98', // Pastel green
     paddingHorizontal: SPACING.sm,
     paddingVertical: 4,
     borderRadius: 12,
@@ -377,9 +504,9 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: SPACING.sm,
     borderRadius: 8,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#FFFACD', // Pastel lemon chiffon
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#DDA0DD', // Pastel plum
     alignItems: 'center',
   },
   deleteButton: {
@@ -421,7 +548,7 @@ const styles = StyleSheet.create({
   modalContent: {
     width: '90%',
     maxHeight: '80%',
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#E6E6FA', // Pastel lavender
     borderRadius: 12,
     padding: SPACING.md,
   },
@@ -439,9 +566,9 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
   },
   input: {
-    backgroundColor: COLORS.background,
+    backgroundColor: '#FFFACD', // Pastel lemon chiffon
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#DDA0DD', // Pastel plum
     borderRadius: 8,
     padding: SPACING.md,
     fontSize: TYPOGRAPHY.fontSize.md,
@@ -459,14 +586,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     borderRadius: 20,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#FFFACD', // Pastel lemon chiffon
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#DDA0DD', // Pastel plum
     marginRight: SPACING.sm,
   },
   categoryChipSelected: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
+    backgroundColor: '#98FB98', // Pastel green
+    borderColor: '#98FB98',
   },
   categoryChipText: {
     fontSize: TYPOGRAPHY.fontSize.sm,
@@ -488,12 +615,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelButton: {
-    backgroundColor: COLORS.background,
+    backgroundColor: '#FFFACD', // Pastel lemon chiffon
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#DDA0DD', // Pastel plum
   },
   saveButton: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: '#98FB98', // Pastel green
   },
   cancelButtonText: {
     fontSize: TYPOGRAPHY.fontSize.md,
@@ -502,7 +629,7 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     fontSize: TYPOGRAPHY.fontSize.md,
-    color: COLORS.surface,
+    color: '#FFFFFF',
     fontWeight: '600',
   },
   footer: {
@@ -511,7 +638,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: TYPOGRAPHY.fontSize.sm,
-    color: COLORS.primary,
+    color: '#9370DB', // Medium purple
     fontWeight: '600',
   },
 });
