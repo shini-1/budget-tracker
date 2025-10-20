@@ -1,6 +1,6 @@
 // Business Dashboard Screen with Analytics and Quick Actions
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,11 +8,15 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 import { RootState } from '../../store';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../constants';
+import { Business } from '../../types';
+import { mockBusinessService } from '../../services/mockBusinessService';
 
 const { width } = Dimensions.get('window');
 
@@ -61,6 +65,26 @@ export const BusinessDashboardScreen: React.FC = () => {
   const navigation = useNavigation();
   const { user } = useSelector((state: RootState) => state.auth);
   const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month'>('today');
+  const [myBusiness, setMyBusiness] = useState<Business | null>(null);
+  const [isLoadingBusiness, setIsLoadingBusiness] = useState(true);
+
+  useEffect(() => {
+    loadMyBusiness();
+  }, [user]);
+
+  const loadMyBusiness = async () => {
+    try {
+      setIsLoadingBusiness(true);
+      // Find business owned by current user
+      const businesses = await mockBusinessService.getBusinesses({ limit: 100 });
+      const userBusiness = businesses.data.find(b => b.ownerId === user?.id);
+      setMyBusiness(userBusiness || null);
+    } catch (error) {
+      console.error('Error loading business:', error);
+    } finally {
+      setIsLoadingBusiness(false);
+    }
+  };
 
   // Mock data - replace with real data from API
   const stats = {
@@ -98,7 +122,9 @@ export const BusinessDashboardScreen: React.FC = () => {
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Welcome back,</Text>
-          <Text style={styles.businessName}>{user?.firstName}'s Restaurant</Text>
+          <Text style={styles.businessName}>
+            {isLoadingBusiness ? 'Loading...' : myBusiness ? myBusiness.name : `${user?.firstName}'s Dashboard`}
+          </Text>
         </View>
         <TouchableOpacity style={styles.notificationButton}>
           <Text style={styles.notificationIcon}>🔔</Text>
@@ -173,27 +199,54 @@ export const BusinessDashboardScreen: React.FC = () => {
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.quickActionsGrid}>
           <QuickAction
-            title="Edit Info"
+            title={myBusiness ? "Edit Info" : "Create Business"}
             icon="✏️"
-            onPress={() => navigation.navigate('RestaurantInfo' as never)}
+            onPress={() => {
+              if (myBusiness) {
+                // @ts-ignore
+                navigation.navigate('EditBusiness', { businessId: myBusiness.id });
+              } else {
+                // @ts-ignore
+                navigation.navigate('CreateBusiness');
+              }
+            }}
             color={COLORS.primary}
+          />
+          <QuickAction
+            title="Add Marker"
+            icon="📍"
+            onPress={() => {
+              if (myBusiness) {
+                Alert.alert(
+                  'Add Business Marker',
+                  'Navigate to map to add your business location marker?',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Add Marker',
+                      onPress: () => {
+                        // @ts-ignore
+                        navigation.navigate('AddBusinessMarker', { businessId: myBusiness.id });
+                      },
+                    },
+                  ]
+                );
+              } else {
+                Alert.alert('No Business', 'Please create a business first before adding a marker.');
+              }
+            }}
+            color={COLORS.secondary}
           />
           <QuickAction
             title="Menu"
             icon="🍽️"
-            onPress={() => navigation.navigate('MenuManagement' as never)}
-            color={COLORS.secondary}
-          />
-          <QuickAction
-            title="Photos"
-            icon="📸"
-            onPress={() => navigation.navigate('PhotoManagement' as never)}
+            onPress={() => navigation.navigate('Menu' as never)}
             color={COLORS.info}
           />
           <QuickAction
-            title="Hours"
-            icon="🕐"
-            onPress={() => navigation.navigate('HoursManagement' as never)}
+            title="Analytics"
+            icon="📊"
+            onPress={() => navigation.navigate('Analytics' as never)}
             color={COLORS.warning}
           />
         </View>
