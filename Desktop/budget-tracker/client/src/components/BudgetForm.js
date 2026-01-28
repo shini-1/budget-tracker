@@ -23,21 +23,25 @@ const BudgetForm = ({ onBudgetAdded }) => {
       return;
     }
 
-    if (timeline === 'custom' && (!startDate || !endDate)) {
+    if (timeline === 'custom date range' && (!startDate || !endDate)) {
       setError('Please select both start and end dates for custom range');
       return;
     }
 
-    if (timeline === 'custom' && new Date(startDate) >= new Date(endDate)) {
+    if (timeline === 'custom date range' && new Date(startDate) >= new Date(endDate)) {
       setError('End date must be after start date');
       return;
     }
 
     setLoading(true);
     try {
+      const today = new Date();
+      const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+
       const budgetData = {
         category,
         limit: parseFloat(limit),
+        month: currentMonth,
         timeline: timeline === 'custom date range' ? 'custom' : timeline.toLowerCase()
       };
 
