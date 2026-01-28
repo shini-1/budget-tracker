@@ -1,26 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import './BudgetCalendar.css';
 
 const BudgetCalendar = ({ budgets = [] }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [daysWithBudgets, setDaysWithBudgets] = useState({});
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    try {
-      calculateBudgetsPerDay();
-    } catch (err) {
-      console.error('Error calculating budgets per day:', err);
-      setError(err.message);
-    }
-  }, [budgets, currentMonth]);
 
   const calculateBudgetsPerDay = () => {
     const budgetsByDay = {};
     
     if (!budgets || budgets.length === 0) {
-      setDaysWithBudgets(budgetsByDay);
-      return;
+      return budgetsByDay;
     }
 
     budgets.forEach(budget => {
@@ -73,7 +61,7 @@ const BudgetCalendar = ({ budgets = [] }) => {
       }
     });
 
-    setDaysWithBudgets(budgetsByDay);
+    return budgetsByDay;
   };
 
   const getDaysInMonth = (date) => {
@@ -98,6 +86,7 @@ const BudgetCalendar = ({ budgets = [] }) => {
   };
 
   try {
+    const daysWithBudgets = calculateBudgetsPerDay();
     const daysInMonth = getDaysInMonth(currentMonth);
     const firstDay = getFirstDayOfMonth(currentMonth);
     const days = [];
@@ -114,14 +103,6 @@ const BudgetCalendar = ({ budgets = [] }) => {
     }
 
     const monthName = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-
-    if (error) {
-      return (
-        <div className="budget-calendar">
-          <div className="calendar-error">Error loading calendar: {error}</div>
-        </div>
-      );
-    }
 
     return (
       <div className="budget-calendar">

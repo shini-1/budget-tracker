@@ -97,6 +97,7 @@ const Dashboard = () => {
 
         <div className="right-column">
           <div className="budget-calendar-section">
+            {console.log('Rendering BudgetCalendar with budgets:', budgets)}
             <BudgetCalendar budgets={budgets} />
           </div>
 
