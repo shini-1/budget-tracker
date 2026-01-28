@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="48" fill="#667eea" stroke="#5568d3" stroke-width="2"/>
+  
+  <!-- Jet -->
+  <g transform="translate(35, 40)">
+    <!-- Jet fuselage -->
+    <ellipse cx="0" cy="0" rx="8" ry="15" fill="#ffffff"/>
+    <!-- Jet nose -->
+    <polygon points="0,-16 3,-12 -3,-12" fill="#ffc107"/>
+    <!-- Jet wings -->
+    <polygon points="-8,0 -18,5 -18,-5" fill="#ffffff"/>
+    <polygon points="8,0 18,5 18,-5" fill="#ffffff"/>
+    <!-- Jet tail -->
+    <polygon points="-4,15 -6,22 -2,22" fill="#ffffff"/>
+    <polygon points="4,15 6,22 2,22" fill="#ffffff"/>
+  </g>
+  
+  <!-- Money bag/coins -->
+  <g transform="translate(60, 55)">
+    <!-- Money bag -->
+    <circle cx="0" cy="0" r="10" fill="#28a745" stroke="#20c997" stroke-width="1.5"/>
+    <!-- Dollar sign -->
+    <text x="0" y="4" font-size="16" font-weight="bold" fill="#ffffff" text-anchor="middle">$</text>
+  </g>
+  
+  <!-- Sparkles for emphasis -->
+  <circle cx="20" cy="20" r="1.5" fill="#ffc107"/>
+  <circle cx="75" cy="25" r="1" fill="#ffc107"/>
+  <circle cx="80" cy="70" r="1.5" fill="#ffc107"/>
+</svg>
