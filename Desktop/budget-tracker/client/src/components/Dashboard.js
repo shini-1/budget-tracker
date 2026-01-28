@@ -38,11 +38,13 @@ const Dashboard = () => {
       setRecentTransactions(dashData.recentTransactions);
       
       const budgetData = await getBudgets();
+      console.log('Budgets loaded:', budgetData);
       setBudgets(budgetData);
 
       const transactionData = await getTransactions();
       setAllTransactions(transactionData);
     } catch (err) {
+      console.error('Dashboard fetch error:', err);
       setError(err.message || 'Failed to load dashboard data');
     } finally {
       setLoading(false);
