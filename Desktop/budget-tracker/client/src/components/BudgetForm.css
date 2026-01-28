@@ -42,6 +42,19 @@
   transition: border-color 0.3s;
 }
 
+.budget-form .form-group input[type="date"] {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+  cursor: pointer;
+  background: white;
+}
+
+.budget-form .form-group input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+}
+
 .budget-form .form-group input:focus,
 .budget-form .form-group select:focus {
   outline: none;

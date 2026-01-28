@@ -6,11 +6,13 @@ const BudgetForm = ({ onBudgetAdded }) => {
   const [category, setCategory] = useState('');
   const [limit, setLimit] = useState('');
   const [timeline, setTimeline] = useState('monthly');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const categories = ['Food', 'Transport', 'Entertainment', 'Utilities', 'Healthcare', 'Shopping', 'Other'];
-  const timelines = ['Weekly', 'Monthly', 'Yearly'];
+  const timelines = ['Daily', 'Weekly', 'Monthly', 'Yearly', 'Custom Date Range'];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,16 +23,35 @@ const BudgetForm = ({ onBudgetAdded }) => {
       return;
     }
 
+    if (timeline === 'custom' && (!startDate || !endDate)) {
+      setError('Please select both start and end dates for custom range');
+      return;
+    }
+
+    if (timeline === 'custom' && new Date(startDate) >= new Date(endDate)) {
+      setError('End date must be after start date');
+      return;
+    }
+
     setLoading(true);
     try {
-      await createBudget({
+      const budgetData = {
         category,
         limit: parseFloat(limit),
-        timeline: timeline.toLowerCase()
-      });
+        timeline: timeline === 'custom date range' ? 'custom' : timeline.toLowerCase()
+      };
+
+      if (timeline === 'custom date range') {
+        budgetData.startDate = startDate;
+        budgetData.endDate = endDate;
+      }
+
+      await createBudget(budgetData);
       setCategory('');
       setLimit('');
       setTimeline('monthly');
+      setStartDate('');
+      setEndDate('');
       onBudgetAdded();
     } catch (err) {
       setError(err.message || 'Failed to create budget');
@@ -71,6 +92,30 @@ const BudgetForm = ({ onBudgetAdded }) => {
             ))}
           </select>
         </div>
+
+        {timeline === 'custom date range' && (
+          <>
+            <div className="form-group">
+              <label>Start Date</label>
+              <input 
+                type="date" 
+                value={startDate} 
+                onChange={(e) => setStartDate(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label>End Date</label>
+              <input 
+                type="date" 
+                value={endDate} 
+                onChange={(e) => setEndDate(e.target.value)}
+                required
+              />
+            </div>
+          </>
+        )}
 
         <div className="form-group">
           <label>Budget Limit (₱)</label>

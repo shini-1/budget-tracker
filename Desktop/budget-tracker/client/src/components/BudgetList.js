@@ -31,6 +31,22 @@ const BudgetList = ({ budgets, onBudgetDeleted }) => {
 
   const isOverBudget = (spent, limit) => spent > limit;
 
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  const getTimelineDisplay = (budget) => {
+    if (budget.timeline === 'custom' && budget.startDate && budget.endDate) {
+      return `${formatDate(budget.startDate)} - ${formatDate(budget.endDate)}`;
+    }
+    return budget.timeline || 'monthly';
+  };
+
   return (
     <div className="budget-list">
       {budgets.length === 0 ? (
@@ -40,7 +56,7 @@ const BudgetList = ({ budgets, onBudgetDeleted }) => {
           <div key={budget._id} className="budget-item">
             <div className="budget-header">
               <h4>{budget.category}</h4>
-              <span className="timeline-badge">{budget.timeline || 'monthly'}</span>
+              <span className="timeline-badge">{getTimelineDisplay(budget)}</span>
               <button
                 className="delete-btn"
                 onClick={() => handleDelete(budget._id)}
