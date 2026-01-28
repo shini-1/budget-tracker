@@ -1,0 +1,7 @@
+runtime: node14
+
+env: standard
+
+handlers:
+  - url: /.*
+    script: auto

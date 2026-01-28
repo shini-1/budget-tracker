@@ -1,0 +1,104 @@
+.transaction-list table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.transaction-list thead {
+  background-color: #f8f9fa;
+}
+
+.transaction-list th {
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #555;
+  border-bottom: 2px solid #ddd;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.transaction-list td {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+  color: #333;
+}
+
+.transaction-row:hover {
+  background-color: #f9f9f9;
+}
+
+.category-badge {
+  display: inline-block;
+  background-color: #e9ecef;
+  color: #495057;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.type-badge {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.type-badge.income {
+  color: #28a745;
+}
+
+.type-badge.expense {
+  color: #dc3545;
+}
+
+.amount {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.amount.income {
+  color: #28a745;
+}
+
+.amount.expense {
+  color: #dc3545;
+}
+
+.delete-btn {
+  background-color: #f8f9fa;
+  border: 1px solid #ddd;
+  color: #dc3545;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  transition: all 0.3s;
+}
+
+.delete-btn:hover:not(:disabled) {
+  background-color: #dc3545;
+  color: white;
+  border-color: #dc3545;
+}
+
+.delete-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .transaction-list table {
+    font-size: 13px;
+  }
+
+  .transaction-list th,
+  .transaction-list td {
+    padding: 8px;
+  }
+
+  .transaction-list {
+    overflow-x: auto;
+  }
+}

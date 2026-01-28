@@ -1,0 +1,132 @@
+.budget-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.budget-list .no-budgets {
+  text-align: center;
+  color: #999;
+  padding: 40px 20px;
+  font-style: italic;
+}
+
+.budget-item {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 15px;
+  transition: box-shadow 0.3s;
+}
+
+.budget-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.budget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.budget-header h4 {
+  margin: 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.budget-header .delete-btn {
+  background-color: #f8f9fa;
+  border: 1px solid #ddd;
+  color: #dc3545;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  transition: all 0.3s;
+}
+
+.budget-header .delete-btn:hover:not(:disabled) {
+  background-color: #dc3545;
+  color: white;
+  border-color: #dc3545;
+}
+
+.budget-header .delete-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.budget-progress {
+  margin-bottom: 12px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 20px;
+  background-color: #e9ecef;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #28a745, #20c997);
+  transition: width 0.3s ease;
+}
+
+.progress-bar.warning .progress-fill {
+  background: linear-gradient(90deg, #ffc107, #ff9800);
+}
+
+.progress-bar.danger .progress-fill {
+  background: linear-gradient(90deg, #dc3545, #c82333);
+}
+
+.budget-info {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  text-align: center;
+}
+
+.spent-info,
+.limit-info,
+.remaining-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.spent-info span,
+.limit-info span,
+.remaining-info span {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.spent-info span.over {
+  color: #dc3545;
+}
+
+.spent-info .label,
+.limit-info .label,
+.remaining-info .label {
+  font-size: 11px;
+  color: #999;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+@media (max-width: 600px) {
+  .budget-info {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
