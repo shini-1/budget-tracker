@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { deleteTransaction } from '../utils/api';
+import { deleteBudget } from '../utils/api';
 import './BudgetList.css';
 
 const BudgetList = ({ budgets, onBudgetDeleted }) => {
@@ -10,7 +10,7 @@ const BudgetList = ({ budgets, onBudgetDeleted }) => {
     
     try {
       setDeleting(id);
-      await deleteTransaction(id); // Using transaction delete for now - should be budget delete
+      await deleteBudget(id);
       onBudgetDeleted();
     } catch (error) {
       alert('Failed to delete budget: ' + error.message);

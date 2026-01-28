@@ -73,3 +73,12 @@ export const createBudget = async (budgetData) => {
   if (!response.ok) throw new Error('Failed to create budget');
   return response.json();
 };
+
+export const deleteBudget = async (id) => {
+  const response = await fetch(`${API_BASE_URL}/budgets/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+  if (!response.ok) throw new Error('Failed to delete budget');
+  return response.json();
+};

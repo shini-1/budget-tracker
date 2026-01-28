@@ -52,15 +52,18 @@ router.get('/', auth, async (req, res) => {
 // Create budget
 router.post('/', auth, async (req, res) => {
   try {
-    const { category, limit } = req.body;
+    const { category, limit, timeline, startDate, endDate, month } = req.body;
     const today = new Date();
-    const month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    const budgetMonth = month || `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
     
     const budget = new Budget({
       user: req.user._id,
       category,
       limit,
-      month
+      month: budgetMonth,
+      timeline: timeline || 'monthly',
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined
     });
     
     await budget.save();
