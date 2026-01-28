@@ -84,10 +84,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="budget-calendar-section">
-        <BudgetCalendar budgets={budgets} />
-      </div>
-
       <div className="dashboard-content">
         <div className="left-column">
           <div className="transaction-form-section">
@@ -100,6 +96,10 @@ const Dashboard = () => {
         </div>
 
         <div className="right-column">
+          <div className="budget-calendar-section">
+            <BudgetCalendar budgets={budgets} />
+          </div>
+
           <div className="charts-grid">
             <div className="chart-wrapper">
               <IncomeExpenseChart 
