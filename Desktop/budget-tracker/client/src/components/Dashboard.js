@@ -67,15 +67,15 @@ const Dashboard = () => {
       <div className="summary-cards">
         <div className="card balance-card">
           <h3>Total Balance</h3>
-          <p className="amount">${balance.toFixed(2)}</p>
+          <p className="amount">₱{balance.toFixed(2)}</p>
         </div>
         <div className="card income-card">
           <h3>Total Income</h3>
-          <p className="amount income">${totalIncome.toFixed(2)}</p>
+          <p className="amount income">₱{totalIncome.toFixed(2)}</p>
         </div>
         <div className="card expense-card">
           <h3>Total Expense</h3>
-          <p className="amount expense">${totalExpense.toFixed(2)}</p>
+          <p className="amount expense">₱{totalExpense.toFixed(2)}</p>
         </div>
       </div>
 

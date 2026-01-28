@@ -62,19 +62,19 @@ const BudgetList = ({ budgets, onBudgetDeleted }) => {
             <div className="budget-info">
               <div className="spent-info">
                 <span className={isOverBudget(budget.spent, budget.limit) ? 'over' : ''}>
-                  ${budget.spent.toFixed(2)}
+                  ₱{budget.spent.toFixed(2)}
                 </span>
                 <span className="label">spent</span>
               </div>
               <div className="limit-info">
-                <span>${budget.limit.toFixed(2)}</span>
+                <span>₱{budget.limit.toFixed(2)}</span>
                 <span className="label">limit</span>
               </div>
               <div className="remaining-info">
                 <span className={isOverBudget(budget.spent, budget.limit) ? 'over' : ''}>
                   {isOverBudget(budget.spent, budget.limit) 
-                    ? `Over by $${(budget.spent - budget.limit).toFixed(2)}`
-                    : `$${(budget.limit - budget.spent).toFixed(2)} left`
+                    ? `Over by ₱${(budget.spent - budget.limit).toFixed(2)}`
+                    : `₱${(budget.limit - budget.spent).toFixed(2)} left`
                   }
                 </span>
                 <span className="label">remaining</span>

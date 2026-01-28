@@ -56,7 +56,7 @@ const BudgetForm = ({ onBudgetAdded }) => {
         </div>
 
         <div className="form-group">
-          <label>Budget Limit ($)</label>
+          <label>Budget Limit (₱)</label>
           <input 
             type="number" 
             value={limit} 

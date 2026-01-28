@@ -20,7 +20,7 @@ function AppContent() {
   return (
     <div className="app-container">
       <nav className="navbar">
-        <h1>Budget Tracker</h1>
+        <h1>BuddyJet</h1>
         <div className="navbar-right">
           {user && user.name && <span className="user-name">Welcome, {user.name}!</span>}
           <button onClick={logout} className="logout-btn">Logout</button>

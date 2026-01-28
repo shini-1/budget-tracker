@@ -32,7 +32,7 @@ const CategoryBreakdownChart = ({ transactions }) => {
     labels: sortedCategories,
     datasets: [
       {
-        label: 'Spending by Category ($)',
+        label: 'Spending by Category (₱)',
         data: amounts,
         backgroundColor: [
           '#667eea',
@@ -94,7 +94,7 @@ const CategoryBreakdownChart = ({ transactions }) => {
         },
         callbacks: {
           label: function(context) {
-            return '$' + context.parsed.x.toFixed(2);
+            return '₱' + context.parsed.x.toFixed(2);
           }
         }
       }
@@ -104,7 +104,7 @@ const CategoryBreakdownChart = ({ transactions }) => {
         beginAtZero: true,
         ticks: {
           callback: function(value) {
-            return '$' + value.toFixed(0);
+            return '₱' + value.toFixed(0);
           }
         }
       }

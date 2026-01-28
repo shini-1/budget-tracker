@@ -100,7 +100,7 @@ const SpendingTrendsChart = ({ transactions }) => {
         },
         callbacks: {
           label: function(context) {
-            return context.dataset.label + ': $' + context.parsed.y.toFixed(2);
+            return context.dataset.label + ': ₱' + context.parsed.y.toFixed(2);
           }
         }
       }
@@ -110,7 +110,7 @@ const SpendingTrendsChart = ({ transactions }) => {
         beginAtZero: true,
         ticks: {
           callback: function(value) {
-            return '$' + value.toFixed(0);
+            return '₱' + value.toFixed(0);
           }
         },
         grid: {

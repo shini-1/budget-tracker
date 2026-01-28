@@ -14,7 +14,7 @@ const IncomeExpenseChart = ({ totalIncome, totalExpense }) => {
     labels: ['Income', 'Expense'],
     datasets: [
       {
-        label: 'Amount ($)',
+        label: 'Amount (₱)',
         data: [totalIncome, totalExpense],
         backgroundColor: ['#28a745', '#dc3545'],
         borderColor: ['#28a745', '#dc3545'],
@@ -52,7 +52,7 @@ const IncomeExpenseChart = ({ totalIncome, totalExpense }) => {
         },
         callbacks: {
           label: function(context) {
-            return '$' + context.parsed.toFixed(2);
+            return '₱' + context.parsed.toFixed(2);
           }
         }
       }

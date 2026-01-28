@@ -48,7 +48,7 @@ const TransactionList = ({ transactions, onTransactionDeleted }) => {
                 </span>
               </td>
               <td className={`amount ${transaction.type}`}>
-                {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toFixed(2)}
+                {transaction.type === 'income' ? '+' : '-'}₱{transaction.amount.toFixed(2)}
               </td>
               <td>
                 <button
