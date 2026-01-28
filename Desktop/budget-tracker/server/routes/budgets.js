@@ -16,11 +16,31 @@ router.get('/', auth, async (req, res) => {
       month: currentMonth 
     });
     
-    // Enrich budgets with spent amount
+    // Enrich budgets with spent amount based on their timeline
     const enrichedBudgets = await Promise.all(budgets.map(async (budget) => {
-      const [year, month] = currentMonth.split('-');
-      const startDate = new Date(year, parseInt(month) - 1, 1);
-      const endDate = new Date(year, parseInt(month), 1);
+      let filterStartDate, filterEndDate;
+      
+      if (budget.timeline === 'daily') {
+        // Daily: only today
+        filterStartDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        filterEndDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+      } else if (budget.timeline === 'weekly') {
+        // Weekly: last 7 days
+        filterStartDate = new Date(today);
+        filterStartDate.setDate(today.getDate() - 6);
+        filterEndDate = new Date(today);
+        filterEndDate.setDate(today.getDate() + 1);
+      } else if (budget.timeline === 'custom' && budget.startDate && budget.endDate) {
+        // Custom date range: only count within that range and only up to today
+        filterStartDate = new Date(budget.startDate);
+        filterEndDate = new Date(Math.min(new Date(budget.endDate).getTime(), today.getTime()));
+        filterEndDate.setDate(filterEndDate.getDate() + 1);
+      } else {
+        // Monthly (default): current month only
+        const [year, month] = currentMonth.split('-');
+        filterStartDate = new Date(year, parseInt(month) - 1, 1);
+        filterEndDate = new Date(year, parseInt(month), 1);
+      }
       
       const spent = await Transaction.aggregate([
         {
@@ -29,8 +49,8 @@ router.get('/', auth, async (req, res) => {
             category: budget.category,
             type: 'expense',
             date: {
-              $gte: startDate,
-              $lt: endDate
+              $gte: filterStartDate,
+              $lt: filterEndDate
             }
           }
         },
