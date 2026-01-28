@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { getDashboard, getBudgets, getTransactions } from '../utils/api';
+import { getDashboard, getBudgets, getTransactions, getServerTime } from '../utils/api';
 import TransactionForm from './TransactionForm';
 import TransactionList from './TransactionList';
 import BudgetForm from './BudgetForm';
 import BudgetList from './BudgetList';
+import BudgetCalendar from './BudgetCalendar';
 import IncomeExpenseChart from './IncomeExpenseChart';
 import CategoryBreakdownChart from './CategoryBreakdownChart';
 import SpendingTrendsChart from './SpendingTrendsChart';
@@ -21,6 +22,8 @@ const Dashboard = () => {
   const [allTransactions, setAllTransactions] = useState([]);
 
   useEffect(() => {
+    // Sync with server time on component mount
+    getServerTime();
     fetchDashboardData();
   }, [refreshKey]);
 
@@ -77,6 +80,10 @@ const Dashboard = () => {
           <h3>Total Expense</h3>
           <p className="amount expense">₱{totalExpense.toFixed(2)}</p>
         </div>
+      </div>
+
+      <div className="budget-calendar-section">
+        <BudgetCalendar budgets={budgets} />
       </div>
 
       <div className="dashboard-content">

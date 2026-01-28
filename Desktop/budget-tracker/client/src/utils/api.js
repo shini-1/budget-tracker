@@ -1,5 +1,25 @@
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
+// Master clock - get server time to ensure consistency
+let serverTimeOffset = 0;
+
+export const getServerTime = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL.replace('/api', '')}/api/server-time`);
+    if (!response.ok) throw new Error('Failed to get server time');
+    const data = await response.json();
+    serverTimeOffset = data.timestamp - Date.now();
+    return new Date(data.timestamp);
+  } catch (err) {
+    console.error('Server time sync failed:', err);
+    return new Date();
+  }
+};
+
+export const getCurrentTime = () => {
+  return new Date(Date.now() + serverTimeOffset);
+};
+
 export const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
   return {

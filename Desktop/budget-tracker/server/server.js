@@ -25,5 +25,13 @@ app.use('/api/transactions', require('./routes/transactions'));
 app.use('/api/budgets', require('./routes/budgets'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 
+// Master clock endpoint - provides server time
+app.get('/api/server-time', (req, res) => {
+  res.json({ 
+    timestamp: Date.now(),
+    date: new Date().toISOString()
+  });
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
