@@ -95,7 +95,7 @@ git push -u origin main
 6. Click **"Environment Variables"**
 7. Add one variable:
    - **Name:** `REACT_APP_API_URL`
-   - **Value:** `https://budget-tracker-api.vercel.app/api` (from Step 2)
+   - **Value:** `https://budget-tracker-4mibt2obl-shinis-projects-5bd09239.vercel.app/api` (from Step 2)
 
 8. Click **"Deploy"**
 9. Wait for deployment (2-3 minutes)
@@ -108,7 +108,7 @@ git push -u origin main
 Update `client/.env.production` with your backend API URL:
 
 ```bash
-REACT_APP_API_URL=https://budget-tracker-api.vercel.app/api
+REACT_APP_API_URL=https://budget-tracker-4mibt2obl-shinis-projects-5bd09239.vercel.app/api
 ```
 
 Then push to GitHub:

@@ -65,7 +65,7 @@ Or use Vercel Dashboard:
 Update `client/.env.production`:
 
 ```bash
-REACT_APP_API_URL=https://budget-tracker-api.vercel.app/api
+REACT_APP_API_URL=https://budget-tracker-4mibt2obl-shinis-projects-5bd09239.vercel.app/api
 ```
 
 Replace with your actual backend URL from Step 2!
