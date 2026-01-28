@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { getCurrentTime } from '../utils/api';
 import './BudgetCalendar.css';
 
 const BudgetCalendar = ({ budgets }) => {
@@ -8,7 +7,7 @@ const BudgetCalendar = ({ budgets }) => {
 
   useEffect(() => {
     calculateBudgetsPerDay();
-  }, [budgets]);
+  }, [budgets, currentMonth]);
 
   const calculateBudgetsPerDay = () => {
     const budgetsByDay = {};
@@ -31,7 +30,7 @@ const BudgetCalendar = ({ budgets }) => {
           budgetsByDay[dateKey].push(budget);
         }
       } else if (budget.timeline === 'weekly') {
-        // Weekly budgets - apply to all Mondays (or chosen day)
+        // Weekly budgets - apply to all Mondays
         for (let day = 1; day <= 31; day++) {
           const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
           if (date.getDay() === 1) { // Monday = 1
@@ -73,7 +72,7 @@ const BudgetCalendar = ({ budgets }) => {
   };
 
   const getTodayDate = () => {
-    const today = getCurrentTime();
+    const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   };
 
