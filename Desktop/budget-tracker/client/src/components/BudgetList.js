@@ -40,6 +40,7 @@ const BudgetList = ({ budgets, onBudgetDeleted }) => {
           <div key={budget._id} className="budget-item">
             <div className="budget-header">
               <h4>{budget.category}</h4>
+              <span className="timeline-badge">{budget.timeline || 'monthly'}</span>
               <button
                 className="delete-btn"
                 onClick={() => handleDelete(budget._id)}

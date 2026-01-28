@@ -5,10 +5,12 @@ import './BudgetForm.css';
 const BudgetForm = ({ onBudgetAdded }) => {
   const [category, setCategory] = useState('');
   const [limit, setLimit] = useState('');
+  const [timeline, setTimeline] = useState('monthly');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const categories = ['Food', 'Transport', 'Entertainment', 'Utilities', 'Healthcare', 'Shopping', 'Other'];
+  const timelines = ['Weekly', 'Monthly', 'Yearly'];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,10 +25,12 @@ const BudgetForm = ({ onBudgetAdded }) => {
     try {
       await createBudget({
         category,
-        limit: parseFloat(limit)
+        limit: parseFloat(limit),
+        timeline: timeline.toLowerCase()
       });
       setCategory('');
       setLimit('');
+      setTimeline('monthly');
       onBudgetAdded();
     } catch (err) {
       setError(err.message || 'Failed to create budget');
@@ -51,6 +55,19 @@ const BudgetForm = ({ onBudgetAdded }) => {
             <option value="">Select Category</option>
             {categories.map(cat => (
               <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label>Timeline</label>
+          <select 
+            value={timeline} 
+            onChange={(e) => setTimeline(e.target.value)}
+            required
+          >
+            {timelines.map(t => (
+              <option key={t} value={t.toLowerCase()}>{t}</option>
             ))}
           </select>
         </div>
