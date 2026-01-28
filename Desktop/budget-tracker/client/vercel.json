@@ -2,6 +2,6 @@
   "buildCommand": "npm run build",
   "outputDirectory": "build",
   "env": {
-    "REACT_APP_API_URL": "https://budget-tracker-4mibt2obl-shinis-projects-5bd09239.vercel.app/api"
+    "REACT_APP_API_URL": "https://budget-tracker-api-rho.vercel.app/api"
   }
 }
